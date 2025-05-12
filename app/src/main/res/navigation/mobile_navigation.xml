@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_face">
+
+    <fragment
+        android:id="@+id/nav_face"
+        android:name="com.yaxiu.opencv.ui.face.FaceRecognitionFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_face" />
+
+    <fragment
+        android:id="@+id/nav_mat"
+        android:name="com.yaxiu.opencv.ui.mat.MatFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_native"
+        android:name="com.yaxiu.opencv.ui.native.NativeFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+    <fragment
+        android:id="@+id/nav_1"
+        android:name="com.yaxiu.opencv.ui.face.FaceRecognitionFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_face" />
+
+    <fragment
+        android:id="@+id/nav_2"
+        android:name="com.yaxiu.opencv.ui.mat.MatFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_3"
+        android:name="com.yaxiu.opencv.ui.native.NativeFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+    <fragment
+        android:id="@+id/nav_4"
+        android:name="com.yaxiu.opencv.ui.face.FaceRecognitionFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_face" />
+
+    <fragment
+        android:id="@+id/nav_5"
+        android:name="com.yaxiu.opencv.ui.mat.MatFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_6"
+        android:name="com.yaxiu.opencv.ui.native.NativeFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+    <fragment
+        android:id="@+id/nav_7"
+        android:name="com.yaxiu.opencv.ui.face.FaceRecognitionFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_face" />
+
+    <fragment
+        android:id="@+id/nav_8"
+        android:name="com.yaxiu.opencv.ui.mat.MatFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_9"
+        android:name="com.yaxiu.opencv.ui.native.NativeFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+    <fragment
+        android:id="@+id/nav_10"
+        android:name="com.yaxiu.opencv.ui.face.FaceRecognitionFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_face" />
+
+    <fragment
+        android:id="@+id/nav_11"
+        android:name="com.yaxiu.opencv.ui.mat.MatFragment"
+        android:label="@string/menu_gallery"
+        tools:layout="@layout/fragment_gallery" />
+
+    <fragment
+        android:id="@+id/nav_12"
+        android:name="com.yaxiu.opencv.ui.native.NativeFragment"
+        android:label="@string/menu_slideshow"
+        tools:layout="@layout/fragment_slideshow" />
+</navigation>
