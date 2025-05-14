@@ -33,12 +33,15 @@ class FaceDetection {
     external fun opencvAddWeight(s: String, s1: String): Bitmap
     @Throws(FileNotFoundException::class)
     external fun opencvSaturationBrightnessContrast(s: String): Bitmap
-    external fun magnifierSpecialEffects(bitmap: Bitmap)
-    external fun fishEyeSpecialEffects(bitmap: Bitmap)
-    external fun oilPaintingSpecialEffects(bitmap: Bitmap)
-    external fun glassSpecialEffects(bitmap: Bitmap)
-    external fun inverseWorldSpecialEffects(bitmap: Bitmap)
-    external fun mirrorSpecialEffects(bitmap: Bitmap)
-    external fun mosaicSpecialEffects(bitmap: Bitmap)
-    external fun reliefSpecialEffects(bitmap: Bitmap)
+    external fun magnifierSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun fishEyeSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun oilPaintingSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun glassSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun inverseWorldSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun mirrorSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun mosaicSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun reliefSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun faceMosaicSpecialEffects(fileName: String, bitmap: Bitmap, param: Runnable)
+    external fun clipSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun moveMagnifierSpecialEffects(x: Float, y: Float, bitmap: Bitmap, param: Runnable)
 }

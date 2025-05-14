@@ -55,14 +55,14 @@ void MatFun::loadBitmapPixelEdit(JNIEnv *env, jobject bitmap) {
                 uchar g = pixel[1];
                 uchar r = pixel[2];
                 uchar a = pixel[3];
-                uchar gray = b + 4 * g + 3 * r;
+                uchar gray = (b + 4 * g + 3 * r) / 10;
                 mat.at<Vec4b>(i, j)[0] = gray;
                 mat.at<Vec4b>(i, j)[1] = gray;
                 mat.at<Vec4b>(i, j)[2] = gray;
                 mat.at<Vec4b>(i, j)[3] = a;
             }
         }
-    }else if (mat.channels() == 3) {
+    } else if (mat.channels() == 3) {
         for (int i = 0; i < mat.rows; ++i) {
             for (int j = 0; j < mat.cols; ++j) {
                 Vec3b pixel = mat.at<Vec3b>(i, j);
@@ -101,6 +101,7 @@ jobject MatFun::pixelEdit(JNIEnv *env, jstring path) {
         LOGE("pixelEdit bitmap2Mat error");
         return bitmap;
     }
+
     LOGI("pixelEdit Mat type:%d channels:%d", mat.type(), mat.channels());
     if (mat.channels() == 4) {
         for (int i = 0; i < mat.rows; ++i) {
@@ -110,14 +111,18 @@ jobject MatFun::pixelEdit(JNIEnv *env, jstring path) {
                 uchar g = pixel[1];
                 uchar r = pixel[2];
                 uchar a = pixel[3];
-                uchar gray = 0.11 * b + 0.59 * g + 0.3 * r;
+                // 好几种算法求灰度
+                // uchar gery = (b + g + r) / 3;
+                // 位移 > +- >  */  int > float
+                uchar gray = (r + (g << 1) + b) >> 2; // 0.4  sobel  |x|+|y|
+                // uchar gray = 0.11 * b + 0.59 * g + 0.3 * r;
                 mat.at<Vec4b>(i, j)[0] = gray;
                 mat.at<Vec4b>(i, j)[1] = gray;
                 mat.at<Vec4b>(i, j)[2] = gray;
                 mat.at<Vec4b>(i, j)[3] = a;
             }
         }
-    }else if (mat.channels() == 3) {
+    } else if (mat.channels() == 3) {
         for (int i = 0; i < mat.rows; ++i) {
             for (int j = 0; j < mat.cols; ++j) {
                 Vec3b pixel = mat.at<Vec3b>(i, j);
@@ -131,7 +136,7 @@ jobject MatFun::pixelEdit(JNIEnv *env, jstring path) {
 
             }
         }
-    }  else if (mat.channels() == 1) {
+    } else if (mat.channels() == 1) {
         for (int i = 0; i < mat.rows; ++i) {
             for (int j = 0; j < mat.cols; ++j) {
                 uchar pixel = mat.at<uchar>(i, j);
@@ -181,10 +186,10 @@ jobject MatFun::imaAdd(JNIEnv *env, jstring path1, jstring path2) {
                 uchar g = pixel1[1] + pixel2[1];
                 uchar r = pixel1[2] + pixel2[2];
                 uchar a = pixel1[3] + pixel2[3];
-                mat3.at<Vec4b>(i, j)[0] =  saturate_cast<uchar>(b);
-                mat3.at<Vec4b>(i, j)[1] =  saturate_cast<uchar>(g);
-                mat3.at<Vec4b>(i, j)[2] =  saturate_cast<uchar>(r);
-                mat3.at<Vec4b>(i, j)[3] =  saturate_cast<uchar>(a);
+                mat3.at<Vec4b>(i, j)[0] = saturate_cast<uchar>(b);
+                mat3.at<Vec4b>(i, j)[1] = saturate_cast<uchar>(g);
+                mat3.at<Vec4b>(i, j)[2] = saturate_cast<uchar>(r);
+                mat3.at<Vec4b>(i, j)[3] = saturate_cast<uchar>(a);
             } else if (mat1.channels() == 1 && mat1.channels() == 4) {
                 uchar pixel1 = mat1.at<uchar>(i, j);
                 Vec4b pixel2 = mat2.at<Vec4b>(i, j);
@@ -208,7 +213,7 @@ jobject MatFun::imaAdd(JNIEnv *env, jstring path1, jstring path2) {
                 mat3.at<Vec4b>(i, j)[1] = saturate_cast<uchar>(pixel1 + pixel2);
                 mat3.at<Vec4b>(i, j)[2] = saturate_cast<uchar>(pixel1 + pixel2);
                 mat3.at<Vec4b>(i, j)[3] = saturate_cast<uchar>(pixel1 + pixel2);
-            }else {
+            } else {
                 LOGE("imaAdd mat2Bitmap error ,chanel 对应的单个像素的类型未实现，请自行补充");
             }
 
@@ -230,8 +235,8 @@ jobject MatFun::saturationBrightnessContrast(JNIEnv *env, jstring path) {
         return bitmap;
     }
     LOGI("saturationBrightnessContrast Mat type:%d channels:%d", mat.type(), mat.channels());
-    int alpha = 1.2;
-    int beta = 20;
+    float alpha = 1.2;
+    int beta = 80;
     if (mat.channels() == 4) {
         for (int i = 0; i < mat.rows; ++i) {
             for (int j = 0; j < mat.cols; ++j) {
@@ -240,20 +245,20 @@ jobject MatFun::saturationBrightnessContrast(JNIEnv *env, jstring path) {
                 uchar g = pixel[1];
                 uchar r = pixel[2];
                 uchar a = pixel[3];
-                mat.at<Vec4b>(i, j)[0] = saturate_cast<uchar>(alpha * b+beta);
+                mat.at<Vec4b>(i, j)[0] = saturate_cast<uchar>(alpha * b + beta);
                 mat.at<Vec4b>(i, j)[1] = saturate_cast<uchar>(alpha * g + beta);
                 mat.at<Vec4b>(i, j)[2] = saturate_cast<uchar>(alpha * r + beta);
                 mat.at<Vec4b>(i, j)[3] = saturate_cast<uchar>(alpha * a + beta);
             }
         }
-    } else  if (mat.channels() == 3) {
+    } else if (mat.channels() == 3) {
         for (int i = 0; i < mat.rows; ++i) {
             for (int j = 0; j < mat.cols; ++j) {
                 Vec3b pixel = mat.at<Vec3b>(i, j);
                 uchar b = pixel[0];
                 uchar g = pixel[1];
                 uchar r = pixel[2];
-                mat.at<Vec3b>(i, j)[0] = saturate_cast<uchar>(alpha * b+beta);
+                mat.at<Vec3b>(i, j)[0] = saturate_cast<uchar>(alpha * b + beta);
                 mat.at<Vec3b>(i, j)[1] = saturate_cast<uchar>(alpha * g + beta);
                 mat.at<Vec3b>(i, j)[2] = saturate_cast<uchar>(alpha * r + beta);
             }
@@ -337,7 +342,6 @@ int MatFun::bitmap2mat(JNIEnv *env, Mat &mat, jobject &bitmap) {
         cvtColor(temp, mat, COLOR_BGR5652RGB);
     } else {
         LOGE("bitmap2Mat current format:%d unknown don't handler", bitmap_info.format);
-        return -1;
     }
 
     AndroidBitmap_unlockPixels(env, bitmap);
@@ -386,7 +390,6 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
 
     } else {
         LOGE("mat2Bitmap current format:%d unknown don't handler", bitmap_info.format);
-        return -1;
     }
 
     AndroidBitmap_unlockPixels(env, bitmap);
@@ -397,6 +400,57 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
  * 浮雕特效
  */
 void MatFun::reliefSpecialEffects(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    int status = bitmap2mat(env, mat, bitmap);
+    if (status < 0) {
+        LOGE("mirrorSpecialEffects bitmap2mat error");
+        return;
+    }
+    LOGE("mirrorSpecialEffects channels = %d", mat.channels());
+    Mat reliefMat = Mat::zeros(mat.size(), mat.type());
+    // 当前像素-下一个像素+ 128 会呈现浮雕特效有立体感，突出了轮廓信息，opencv  卷积
+    uchar v = 128;
+    if (mat.channels() == 4) {
+
+        for (int rows = 0; rows < mat.rows - 1; ++rows) {
+            for (int cols = 0; cols < mat.cols - 1; ++cols) {
+                Vec4b pixels_p = mat.at<Vec4b>(rows, cols);
+                Vec4b pixels_n = mat.at<Vec4b>(rows + 1, cols + 1);
+                // bgra
+                reliefMat.at<Vec4b>(rows, cols)[0] = saturate_cast<uchar>(
+                        pixels_p[0] - pixels_n[0] + 128);
+                reliefMat.at<Vec4b>(rows, cols)[1] = saturate_cast<uchar>(
+                        pixels_p[1] - pixels_n[1] + 128);
+                reliefMat.at<Vec4b>(rows, cols)[2] = saturate_cast<uchar>(
+                        pixels_p[2] - pixels_n[2] + 128);
+                reliefMat.at<Vec4b>(rows, cols)[3] = pixels_p[0];
+            }
+        }
+    } else if (mat.channels() == 3) {
+
+        for (int row = 0; row < mat.rows - 1; ++row) {
+            for (int col = 0; col < mat.cols - 1; ++col) {
+                Vec3b pixel_c = mat.at<Vec3b>(row, col);
+                Vec3b pixel_n = mat.at<Vec3b>(row + 1, col + 1);
+                reliefMat.at<Vec3b>(row, col)[0] = saturate_cast<uchar>(
+                        pixel_c[0] + pixel_n[0] + v);
+                reliefMat.at<Vec3b>(row, col)[1] = saturate_cast<uchar>(
+                        pixel_c[1] + pixel_n[1] + v);
+                reliefMat.at<Vec3b>(row, col)[2] = saturate_cast<uchar>(
+                        pixel_c[2] + pixel_n[2] + v);
+            }
+        }
+    } else if (mat.channels() == 1) {
+        for (int row = 0; row < mat.rows - 1; ++row) {
+            for (int col = 0; col < mat.cols - 1; ++col) {
+                uchar pixel_c = mat.at<uchar>(row, col);
+                uchar pixel_n = mat.at<uchar>(row + 1, col + 1);
+                reliefMat.at<uchar>(row, col) = saturate_cast<uchar>(pixel_c + pixel_n + v);
+            }
+        }
+    }
+
+    mat2bitmap(env, reliefMat, bitmap);
 
 }
 
@@ -405,6 +459,110 @@ void MatFun::reliefSpecialEffects(JNIEnv *env, jobject bitmap) {
  */
 void MatFun::mosaicSpecialEffects(JNIEnv *env, jobject bitmap) {
 
+    Mat mat;
+    int status = bitmap2mat(env, mat, bitmap);
+    if (status < 0) {
+        LOGE("mirrorSpecialEffects bitmap2mat error");
+        return;
+    }
+    LOGE("mirrorSpecialEffects channels = %d", mat.channels());
+    //认定区域 进行马赛克处理
+    // 获取图片宽高
+    //1.指定马赛克区域
+    //2.指定马赛克步长
+    //3.取步长的像素值
+    //4.循环遍历步长
+    //5.将步骤3取得像数值赋值给步长+1 的每个像素
+    //原理，相当区域内区使用外区的像素值
+    int src_w = mat.cols;
+    int src_h = mat.rows;
+    int rows_start = src_h >> 2;
+    int rows_end = src_h * 3 / 4;
+    int cols_start = src_w >> 2;
+    int cols_end = src_w * 3 / 4;
+    int size = 10;
+
+    for (int row = rows_start; row < rows_end; row += size) {
+        for (int col = cols_start; col < cols_end; col += size) {
+            int pixel_c = mat.at<int>(row, col);
+            for (int m_rows = 1; m_rows < size; ++m_rows) {
+                for (int m_cols = 1; m_cols < size; ++m_cols) {
+                    mat.at<int>(row + m_rows, col + m_cols) = pixel_c;
+                }
+
+            }
+        }
+    }
+    mat2bitmap(env, mat, bitmap);
+
+}
+
+/**
+ *面部马赛克
+ */
+void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring filName, jobject bitmap) {
+    const char *path = env->GetStringUTFChars(filName, JNI_FALSE);
+    bool result = cascadeClassifier.load(path);
+    LOGE("加载分类器path%s", path);
+    if (result) {
+        LOGE("加载分类器文件成功");
+        //1.bitmap 转 mat
+        Mat src;
+        bitmap2mat(env, src, bitmap);
+        //2.mat 灰度化
+        cvtColor(src, src, COLOR_BGRA2GRAY);
+        //直方图均衡化
+        Mat hist;
+        equalizeHist(src, hist);
+        /****
+         *InputArray image,
+          CV_OUT std::vector<Rect>& objects,
+          double scaleFactor = 1.1,
+          int minNeighbors = 3, int flags = 0,
+          Size minSize = Size(),
+          Size maxSize = Size()
+         */
+        vector<Rect> faces;
+        cascadeClassifier.detectMultiScale(hist, faces, 1.1, 5);
+        if (faces.size() > 0) {
+            //x, y,width,height
+            Rect faceRect = faces[0];//面部所在的位置
+            // 在人脸部分花个图
+            rectangle(hist, faceRect, Scalar(255, 0, 0), 8);
+            int x = faceRect.x;
+            int y = faceRect.y;
+
+            int src_w = faceRect.width;
+            int src_h = faceRect.height;
+            int rows_start = y ;
+            int rows_end = y + src_h;
+            int cols_start = x;
+            int cols_end = x+src_w;
+            int size = 10;
+            LOGE("faceMosaicSpecialEffects x = %d y = %d width = %d height = %d", x, y, src_w,
+                 src_h);
+            for (int row = rows_start; row < rows_end; row += size) {
+                for (int col = cols_start; col < cols_end; col += size) {
+                    int pixel_c = hist.at<int>(row, col);
+                    for (int m_rows = 1; m_rows < size; ++m_rows) {
+                        for (int m_cols = 1; m_cols < size; ++m_cols) {
+                            hist.at<int>(row + m_rows, col + m_cols) = pixel_c;
+                        }
+
+                    }
+                }
+            }
+
+            mat2bitmap(env, hist, bitmap);
+        }
+
+
+    } else {
+        LOGE("加载分类器文件失败");
+    }
+
+    env->ReleaseStringUTFChars(filName, path);
+
 }
 
 /**
@@ -412,33 +570,382 @@ void MatFun::mosaicSpecialEffects(JNIEnv *env, jobject bitmap) {
  */
 void MatFun::mirrorSpecialEffects(JNIEnv *env, jobject bitmap) {
 
+    Mat mat;
+    int status = bitmap2mat(env, mat, bitmap);
+    if (status < 0) {
+        LOGE("mirrorSpecialEffects bitmap2mat error");
+        return;
+    }
+    random_device rd;  // 用于获取随机种子
+    mt19937 gen(rd()); // 使用Mersenne Twister引擎
+
+    // 2. 定义分布 [0, 2] 闭区间
+    uniform_int_distribution<> dis(0, 2);
+    int random_num = dis(gen);
+    LOGE("mirrorSpecialEffects channels = %d random_num = %d", mat.channels(), random_num);
+    Mat mirrorMat = Mat::zeros(mat.size(), mat.type());
+
+    if (random_num == 0) {
+        if (mat.channels() == 4) {
+            for (int row = 0; row < mat.rows; ++row) {//rows 代表高度
+                for (int col = 0; col < mat.cols; ++col) {//cols 代表宽度
+                    //1.左右镜像
+                    Vec4b v4 = mat.at<Vec4b>(row, col);
+                    mirrorMat.at<Vec4b>(row, mat.cols - col - 1) = v4;
+
+                }
+            }
+        } else if (mat.channels() == 3) {
+            //1.左右镜像
+            for (int row = 0; row < mat.rows; ++row) {//rows 代表高度
+                for (int col = 0; col < mat.cols; ++col) {//cols 代表宽度
+                    //1.左右镜像
+                    Vec3b v3 = mat.at<Vec3b>(row, col);
+                    mirrorMat.at<Vec3b>(row, mat.cols - col - 1) = v3;
+
+                }
+            }
+        } else if (mat.channels() == 1) {
+            //1.左右镜像
+            for (int row = 0; row < mat.rows; ++row) {//rows 代表高度
+                for (int col = 0; col < mat.cols; ++col) {//cols 代表宽度
+                    //1.左右镜像
+                    uchar u = mat.at<uchar>(row, col);
+                    mirrorMat.at<uchar>(row, mat.cols - col - 1) = u;
+                }
+            }
+        } else {
+            LOGE("mirrorSpecialEffects channels not support");
+        }
+
+    } else if (random_num == 1) {
+        if (mat.channels() == 4) {
+            for (int row = 0; row < mat.rows; ++row) {
+                for (int col = 0; col < mat.cols; ++col) {
+                    //2.上下镜像
+                    Vec4b v4 = mat.at<Vec4b>(row, col);
+                    mirrorMat.at<Vec4b>(mat.rows - row - 1, col) = v4;
+                }
+            }
+        } else if (mat.channels() == 2) {
+            for (int row = 0; row < mat.rows; ++row) {
+                for (int col = 0; col < mat.cols; ++col) {
+                    //2.上下镜像
+                    Vec3b v3 = mat.at<Vec3b>(row, col);
+                    mirrorMat.at<Vec3b>(mat.rows - row - 1, col) = v3;
+                }
+            }
+        } else if (mat.channels() == 1) {
+            for (int row = 0; row < mat.rows; ++row) {
+                for (int col = 0; col < mat.cols; ++col) {
+                    //2.上下镜像
+                    uchar u = mat.at<uchar>(row, col);
+                    mirrorMat.at<uchar>(mat.rows - row - 1, col) = u;
+                }
+            }
+        } else {
+            LOGE("mirrorSpecialEffects channels not support");
+        }
+
+    } else {
+        if (mat.channels() == 4) {
+            for (int row = 0; row < mat.rows; ++row) {
+                for (int col = 0; col < mat.cols; ++col) {
+                    //3.左右上下镜像
+                    Vec4b v4 = mat.at<Vec4b>(row, col);
+                    mirrorMat.at<Vec4b>(mat.rows - row - 1, mat.cols - col - 1) = v4;
+                }
+            }
+        } else if (mat.channels() == 2) {
+            for (int row = 0; row < mat.rows; ++row) {
+                for (int col = 0; col < mat.cols; ++col) {
+                    //3.左右上下镜像
+                    Vec3b v3 = mat.at<Vec3b>(row, col);
+                    mirrorMat.at<Vec3b>(mat.rows - row - 1, mat.cols - col - 1) = v3;
+
+                }
+            }
+        } else if (mat.channels() == 1) {
+            for (int row = 0; row < mat.rows; ++row) {
+                for (int col = 0; col < mat.cols; ++col) {
+                    //3.左右上下镜像
+                    uchar u = mat.at<uchar>(row, col);
+                    mirrorMat.at<uchar>(mat.rows - row - 1, mat.cols - col - 1) = u;
+                }
+            }
+        } else {
+            LOGE("mirrorSpecialEffects channels not support");
+        }
+
+    }
+    mat2bitmap(env, mirrorMat, bitmap);
+
 }
 
 /**
  * 逆世界特效
  */
 void MatFun::inverseWorldSpecialEffects(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    int status = bitmap2mat(env, mat, bitmap);
+    if (status < 0) {
+        LOGE("mirrinverseWorldSpecialEffectsorSpecialEffects bitmap2mat error");
+        return;
+    }
+    //1.将图片高度平均分成4等分
+    //2.取中间2/4 的像素
+    //3.将所取的像素放置在新Mat 中间-底部 区域
+    //4.将所取像素翻转之后，放置在新Mat 的顶部-中间 区域
+    Mat matInverse = Mat::zeros(mat.size(), mat.type());
+    int src_w = mat.cols;
+    int src_h = mat.rows;
 
+    int mid_h = src_h >> 1;
+    int start_h = mid_h >> 1;
+
+    if (mat.channels() == 4) {
+        for (int row = 0; row < mid_h; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                // 4 rgba  , 判断 type()
+                matInverse.at<Vec4b>(row + mid_h, col) = mat.at<Vec4b>(row + start_h, col);
+
+            }
+
+        }
+        for (int row = 0; row < mid_h; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                matInverse.at<Vec4b>(row, col) = mat.at<Vec4b>(mat.rows - start_h - row, col);
+
+            }
+
+        }
+    } else if (mat.channels() == 3) {
+        for (int row = 0; row < mid_h; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                // 4 rgba  , 判断 type()
+                matInverse.at<Vec3b>(row + mid_h, col) = mat.at<Vec3b>(row + start_h, col);
+
+            }
+
+        }
+        for (int row = 0; row < mid_h; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                matInverse.at<Vec3b>(row, col) = mat.at<Vec3b>(mat.rows - start_h - row, col);
+
+            }
+
+        }
+    } else if (mat.channels() == 1) {
+        for (int row = 0; row < mid_h; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                // 4 rgba  , 判断 type()
+                matInverse.at<uchar>(row + mid_h, col) = mat.at<uchar>(row + start_h, col);
+
+            }
+
+        }
+        for (int row = 0; row < mid_h; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                matInverse.at<uchar>(row, col) = mat.at<uchar>(mat.rows - start_h - row, col);
+
+            }
+
+        }
+    }
+
+
+    mat2bitmap(env, matInverse, bitmap);
 }
 
 /**
  * 毛玻璃特效
  */
 void MatFun::glassSpecialEffects(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    // 高斯模糊，毛玻璃 （对某个区域取随机像素）
+    int src_w = mat.cols;
+    int src_h = mat.rows;
+    int size = 25;
+    RNG rng(time(NULL));
+    for (int row = 0; row < src_h - size; ++row) {
+        for (int col = 0; col < src_w - size; ++col) {
+            int random = rng.uniform(0, size);
+            mat.at<int>(row, col) = mat.at<int>(row + random, col + random);
+        }
 
+    }
+    mat2bitmap(env, mat, bitmap);
+}
+
+void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject bitmap) {
+    // 创建输出图像
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    resize(mat, mat, Size(), 0.5, 0.5);
+
+    int brushSize = 10;
+    int coarseness = 2;
+
+
+    // 创建临时图像
+    Mat temp;
+    mat.copyTo(temp);
+
+    // 1. 颜色量化
+    for (int i = 0; i < coarseness; i++) {
+        pyrDown(temp, temp);
+        pyrUp(temp, temp);
+    }
+
+    // 2. 添加笔触效果
+    RNG rng(getTickCount());
+    for (int y = 0; y < temp.rows; y += brushSize) {
+        for (int x = 0; x < temp.cols; x += brushSize) {
+            int radius = brushSize / 2 + rng.uniform(-brushSize / 4, brushSize / 4);
+            Point center(x + rng.uniform(-brushSize / 4, brushSize / 4),
+                         y + rng.uniform(-brushSize / 4, brushSize / 4));
+
+            // 获取区域颜色
+            Rect roi(max(0, center.x - radius), max(0, center.y - radius),
+                     min(2 * radius, temp.cols - center.x + radius),
+                     min(2 * radius, temp.rows - center.y + radius));
+            if (roi.width <= 0 || roi.height <= 0) continue;
+
+            Mat region = temp(roi);
+            Scalar meanColor = mean(region);
+
+            // 绘制椭圆笔触
+            ellipse(temp, center, Size(radius, radius / 2 + rng.uniform(0, radius / 2)),
+                    rng.uniform(0, 360), 0, 360,
+                    meanColor, FILLED, LINE_AA);
+        }
+    }
+
+    // 3. 边缘增强
+    Mat edges;
+    Canny(mat, edges, 50, 150);
+    cvtColor(edges, edges, COLOR_GRAY2BGR);
+    //  temp = temp - edges * 0.3; // 减弱边缘
+    //subtract(temp, edges* 0.3, temp);
+
+
+    // 4. 纹理增强
+    Mat texture;
+    Mat kernel = (Mat_<float>(3, 3) << 1, 1, 1, 1, -8, 1, 1, 1, 1);
+    filter2D(temp, texture, CV_32F, kernel);
+    texture.convertTo(texture, CV_8U);
+    add(temp, texture * 0.1, temp); // 添加轻微纹理
+
+
+    mat2bitmap(env, temp, bitmap);
 }
 
 /**
  * 油画特效
+ *  // 油画基于直方统计
+    // 1. 每个点需要分成 n*n 小块
+    // 2. 统计灰度等级
+    // 3. 选择灰度等级中最多的值
+    // 4. 找到所有的像素取平均值
+     Mat src;
+     bitmap2mat(env,src, bitmap);
+     Mat gary;
+     cvtColor(src, gary, COLOR_BGRA2GRAY);
+     Mat res(src.size(), src.type());
+
+     int src_w = src.cols;
+     int src_h = src.rows;
+     int size = 8;
+     // 知识不是用来背的 20% ，用来唤醒大家的
+     for (int rows = 0; rows < src_h - size; ++rows) {
+         for (int cols = 0; cols < src_w - size; ++cols) {
+             int g[8] = {0}, b_g[8] = {0}, g_g[8] = {0}, r_g[8] = {0};// 255/8
+             // 这个位置  64 循环 -> 1 个像素点 ， 高斯模糊 ，想想怎么优化
+             for (int o_rows = 0; o_rows < size; ++o_rows) {
+                 for (int o_cols = 0; o_cols < size; ++o_cols) {
+                     uchar gery = gary.at<uchar>(rows + o_rows, cols + o_cols);
+                     uchar index = gery / (254 / 7); // 254*8/254
+                     g[index] += 1;
+                     // 等级的像素值之和
+                     b_g[index] += src.at<Vec4b>(rows + o_rows, cols + o_cols)[0];
+                     g_g[index] += src.at<Vec4b>(rows + o_rows, cols + o_cols)[1];
+                     r_g[index] += src.at<Vec4b>(rows + o_rows, cols + o_cols)[2];
+                 }
+             }
+             // 最大的角标找出来
+             int max_index = 0;
+             int max = g[0];
+             for (int i = 1; i < size; ++i) {
+                 if (g[max_index] < g[i]) {
+                     max_index = i;
+                     max = g[i];
+                 }
+             }
+             // 会超过 255 ， 会不会超过，超过了会怎样 （头条面试）  截取掉最高位
+             res.at<Vec4b>(rows, cols)[0] = b_g[max_index] / max;
+             res.at<Vec4b>(rows, cols)[1] = g_g[max_index] / max;
+             res.at<Vec4b>(rows, cols)[2] = r_g[max_index] / max;
+         }
+     }
+    mat2bitmap(env, res, bitmap);
  */
 void MatFun::oilPaintingSpecialEffects(JNIEnv *env, jobject bitmap) {
-
+    oilPaintingSpecialEffects2(env, bitmap);
 }
 
 /**
  * bitmap 裁剪
  */
 void MatFun::croppingBitmap(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    Mat resizeMat;
+    resize(mat, resizeMat, Size(mat.cols >> 1, mat.rows >> 1));
+    LOGE("croppingBitmap mat cols:%d rows:%d resizeMat cols:%d rows:%d", mat.cols, mat.rows,
+         resizeMat.cols, resizeMat.rows);
+
+    AndroidBitmapInfo bitmap_info;
+    void *pixelPtr;
+    int getInfoRes = AndroidBitmap_getInfo(env, bitmap, &bitmap_info);
+    if (getInfoRes < 0) {
+        return;
+    }
+    // 检查 Bitmap 格式
+    CV_Assert(bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
+              bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565);
+    int lockPixelsRes = AndroidBitmap_lockPixels(env, bitmap, &pixelPtr);
+    if (lockPixelsRes < 0) {
+        return;
+    }
+
+    LOGI("mat2Bitmap current format:%d", bitmap_info.format);
+
+    if (bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {//对应CV_8UC4
+        Mat temp = Mat(bitmap_info.height >> 1, bitmap_info.width >> 1, CV_8UC4, pixelPtr);
+        if (resizeMat.type() == CV_8UC1) {
+            cvtColor(resizeMat, temp, cv::COLOR_GRAY2RGBA);
+        } else if (resizeMat.type() == CV_8UC3) {
+            cvtColor(resizeMat, temp, cv::COLOR_RGB2RGBA);
+        } else if (resizeMat.type() == CV_8UC4) {
+            resizeMat.copyTo(temp);
+        }
+
+    } else if (bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565) {//对应CV_8UC2
+        Mat temp = Mat(bitmap_info.height >> 1, bitmap_info.width >> 1, CV_8UC2, pixelPtr);
+        if (resizeMat.type() == CV_8UC1) {
+            cvtColor(resizeMat, temp, cv::COLOR_GRAY2BGR565);
+        } else if (resizeMat.type() == CV_8UC3) {
+            cvtColor(resizeMat, temp, cv::COLOR_RGB2BGR565);
+        } else if (resizeMat.type() == CV_8UC4) {
+            cvtColor(resizeMat, temp, cv::COLOR_RGBA2BGR565);
+        }
+
+    } else {
+        LOGE("mat2Bitmap current format:%d unknown don't handler", bitmap_info.format);
+    }
+
+    AndroidBitmap_unlockPixels(env, bitmap);
 
 }
 
@@ -448,7 +955,146 @@ void MatFun::croppingBitmap(JNIEnv *env, jobject bitmap) {
  * @param bitmap
  */
 void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    resize(mat, mat, Size(mat.cols >> 1, mat.rows >> 1));
 
+    // 应用鱼眼效果
+    float intensity = 0.7f; // 变形强度 (0.0-1.0)
+
+    Mat mapx, mapy;
+    Size size = mat.size();
+    mapx.create(size, CV_32F);
+    mapy.create(size, CV_32F);
+
+    const float centerX = size.width / 2.0f;
+    const float centerY = size.height / 2.0f;
+    const float maxRadius = sqrt(centerX * centerX + centerY * centerY);
+
+    // 预计算角度和半径的查找表
+    Mat dx = Mat::zeros(size, CV_32F);
+    Mat dy = Mat::zeros(size, CV_32F);
+    Mat r = Mat::zeros(size, CV_32F);
+    Mat theta = Mat::zeros(size, CV_32F);
+
+    // 第一阶段：并行计算dx, dy, r, theta
+    parallel_for_(Range(0, size.height), [&](const Range &range) {
+        for (int y = range.start; y < range.end; y++) {
+            for (int x = 0; x < size.width; x++) {
+                dx.at<float>(y, x) = x - centerX;
+                dy.at<float>(y, x) = y - centerY;
+                float _dx = dx.at<float>(y, x);
+                float _dy = dy.at<float>(y, x);
+                r.at<float>(y, x) = sqrt(_dx * _dx + _dy * _dy);
+                theta.at<float>(y, x) = atan2(_dy, _dx);
+            }
+        }
+    });
+
+    // 第二阶段：并行计算映射
+    parallel_for_(Range(0, size.height), [&](const Range &range) {
+        for (int y = range.start; y < range.end; y++) {
+            for (int x = 0; x < size.width; x++) {
+                float newR = pow(r.at<float>(y, x) / maxRadius, 1.0f + intensity) * maxRadius;
+                mapx.at<float>(y, x) = newR * cos(theta.at<float>(y, x)) + centerX;
+                mapy.at<float>(y, x) = newR * sin(theta.at<float>(y, x)) + centerY;
+            }
+        }
+    });
+
+    Mat outMat;
+    remap(mat, outMat, mapx, mapy, INTER_LINEAR, BORDER_CONSTANT, Scalar(0, 0, 0));
+    //添加渐晕效果
+    float vignetteStrength = 0.8f;
+    Mat vignette = Mat::zeros(outMat.size(), CV_32F);
+    Point center(mat.cols / 2, outMat.rows / 2);
+    float radius = min(center.x, center.y) * 0.9f;
+
+    for (int y = 0; y < outMat.rows; y++) {
+        for (int x = 0; x < outMat.cols; x++) {
+            float distance = norm(Point(x, y) - center);
+            float factor = 1.0f - vignetteStrength * pow(distance / radius, 2);
+            factor = max(0.0f, min(1.0f, factor));
+
+            if (outMat.channels() == 3) {
+                outMat.at<Vec3b>(y, x) = outMat.at<Vec3b>(y, x) * factor;
+            } else {
+                outMat.at<uchar>(y, x) = outMat.at<uchar>(y, x) * factor;
+            }
+        }
+    }
+    mat2bitmap(env, outMat, bitmap);
+}
+
+void *getMouseCallbackUserData() {
+    // 假设你有一个全局变量存储了用户数据
+    static void *userData = nullptr;
+    return userData;
+}
+
+void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap,Mat &src, Mat &dst, Point center, int radius, float magnification,
+                             bool lensEffect = true, bool fishEye = true) {
+    src.copyTo(dst);
+
+    // 参数检查
+    if (radius <= 0 || magnification <= 1.0f) return;
+    LOGE("advancedMagnifierEffect start lensEffect:%b fishEye:%b", lensEffect, fishEye);
+    // 确保中心在图像范围内
+    center.x = max(radius, min(src.cols - radius, center.x));
+    center.y = max(radius, min(src.rows - radius, center.y));
+    LOGE("advancedMagnifierEffect x%d y%d",  center.x,  center.y);
+    // 创建放大区域蒙版
+    Mat mask = Mat::zeros(src.size(), CV_8UC1);
+    circle(mask, center, radius, Scalar(255), -1);
+
+    // 创建映射矩阵
+    Mat map_x(src.size(), CV_32FC1);
+    Mat map_y(src.size(), CV_32FC1);
+
+    for (int y = 0; y < src.rows; y++) {
+        for (int x = 0; x < src.cols; x++) {
+            // 计算到中心的距离
+            float dx = x - center.x;
+            float dy = y - center.y;
+            float distance = sqrt(dx * dx + dy * dy);
+
+            if (distance <= radius) {
+                if (fishEye) {
+                    // 鱼眼变形效果
+                    float r = distance / radius;
+                    float theta = atan2(dy, dx);
+                    float newR = pow(r, 0.8f) * radius;
+
+                    map_x.at<float>(y, x) = center.x + newR * cos(theta);
+                    map_y.at<float>(y, x) = center.y + newR * sin(theta);
+                } else {
+                    // 简单放大
+                    map_x.at<float>(y, x) = center.x + (x - center.x) / magnification;
+                    map_y.at<float>(y, x) = center.y + (y - center.y) / magnification;
+                }
+            } else {
+                map_x.at<float>(y, x) = x;
+                map_y.at<float>(y, x) = y;
+            }
+        }
+    }
+
+    // 应用重映射
+    remap(src, dst, map_x, map_y, INTER_LINEAR, BORDER_REPLICATE);
+    LOGE("advancedMagnifierEffect remap");
+    if (lensEffect) {
+        // 添加透镜效果
+        Mat lensEffect = Mat::zeros(src.size(), src.type());
+        circle(lensEffect, center, radius, Scalar(255, 255, 255), -1);
+        GaussianBlur(lensEffect, lensEffect, Size(25, 25), 0);
+        addWeighted(dst, 1.0, lensEffect, 0.1, 0, dst);
+
+        // 添加边框
+        circle(dst, center, radius, Scalar(255, 255, 255), 3);
+        circle(dst, center, radius - 2, Scalar(0, 0, 0), 1);
+        LOGE("advancedMagnifierEffect circle");
+        mat2bitmap(env, dst, bitmap);
+    }
 }
 
 /**
@@ -456,8 +1102,35 @@ void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject bitmap) {
  * @param env
  * @param bitmap
  */
-void MatFun::magnifierSpecialEffects(JNIEnv *env, jobject bitmap){
+void MatFun::magnifierSpecialEffects(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+
+
+    // 参数
+    int radius = 100;
+    float magnification = 2.0f;
+    Mat dst;
+    // 初始显示
+    advancedMagnifierEffect(env, bitmap,mat, dst, Point(mat.cols >> 1, mat.rows >> 1), radius, magnification,
+                            true, false);
+
 
 }
 
+
+void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject bitmap) {
+
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    LOGE("advancedMagnifierEffect x%f y%f", x, y);
+
+    // 参数
+    int radius = 100;
+    float magnification = 2.0f;
+    Mat dst;
+    // 初始显示
+    advancedMagnifierEffect(env,bitmap,mat, dst, Point(x + radius / 2, y + radius / 2), radius, magnification,
+                            true, false);
+}
 

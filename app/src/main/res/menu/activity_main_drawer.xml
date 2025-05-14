@@ -17,9 +17,9 @@
             android:icon="@drawable/ic_menu_slideshow"
             android:title="@string/menu_slideshow" />
         <item
-            android:id="@+id/nav_1"
+            android:id="@+id/nav_effects"
             android:icon="@drawable/ic_menu_camera"
-            android:title="@string/menu_home" />
+            android:title="@string/menu_qq_effects" />
         <item
             android:id="@+id/nav_2"
             android:icon="@drawable/ic_menu_gallery"

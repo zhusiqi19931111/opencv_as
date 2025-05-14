@@ -6,14 +6,20 @@
 #define OPENCV_MATFUN_H
 #include <string>
 #include <jni.h>
+#include <random> // C++11 随机数库
+#include <cmath>
+#include <iostream>
+#include <vector>
+#include <algorithm>
 #include "log.h"
 #include <opencv2/opencv.hpp>
 #include <android/bitmap.h>
-
 using namespace cv;
 using namespace std;
 
 class MatFun {
+public:
+    CascadeClassifier cascadeClassifier;
 public:
     MatFun();
     MatFun(const MatFun& mat);
@@ -40,6 +46,8 @@ public:
 
     void mosaicSpecialEffects(JNIEnv *env, jobject bitmap);
 
+    void faceMosaicSpecialEffects(JNIEnv *env,jstring filName, jobject bitmap);
+
     void mirrorSpecialEffects(JNIEnv *env, jobject bitmap);
 
     void inverseWorldSpecialEffects(JNIEnv *env, jobject bitmap);
@@ -48,12 +56,19 @@ public:
 
     void oilPaintingSpecialEffects(JNIEnv *env, jobject bitmap);
 
+    void oilPaintingSpecialEffects2(JNIEnv *env, jobject bitmap);
+
     void croppingBitmap(JNIEnv *env, jobject bitmap);
 
     void fishEyeSpecialEffects(JNIEnv *env, jobject bitmap);
 
     void magnifierSpecialEffects(JNIEnv *env, jobject bitmap);
 
+    void magnifierSpecialEffects(JNIEnv *env,jfloat x, jfloat y, jobject bitmap);
+
+    void advancedMagnifierEffect(JNIEnv *env, jobject bitmap,Mat& src, Mat& dst, Point center, int radius, float magnification,
+                                         bool lensEffect, bool fishEye);
+    friend void* getMouseCallbackUserData();
 
 };
 

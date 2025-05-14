@@ -10,11 +10,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.yaxiu.opencv.FaceDetection
 import com.yaxiu.opencv.R
 import com.yaxiu.opencv.databinding.FragmentSlideshowBinding
+import java.io.File
 import kotlin.random.Random
 
 class NativeFragment : Fragment(), View.OnClickListener {
@@ -55,8 +57,14 @@ class NativeFragment : Fragment(), View.OnClickListener {
     private fun createMat(view: View) {
         FaceDetection.instance.matObj()
         try {
+            val file=
+                File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg");
+            if(!file.exists()){
+                Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+                return
+            }
             val b =
-                FaceDetection.instance.createBitmapByDecodeFile("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg")
+                FaceDetection.instance.createBitmapByDecodeFile(file.absolutePath)
             println("createBitmapByDecodeFile b= [${b}]")
             img1.setImageBitmap(b)
         } catch (e: Exception) {
@@ -66,25 +74,31 @@ class NativeFragment : Fragment(), View.OnClickListener {
 
     private fun opencvEditPiexl(view: View) {
         try {
+            val file=
+                File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg");
+            if(!file.exists()){
+                Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+                return
+            }
             val loadPreMemory = getMemoryInfo(requireContext())
             val loadPreJavaMemory = getJavaHeapMemory()
-            val random =1; Random.nextInt(10)
+            val random =Random.nextInt(10)
             println("random = [${random}]")
             val bitmap: Bitmap
             if (random % 2 == 0) {
                 bitmap =
-                    FaceDetection.instance.opencvEditPiexl("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg")
-
+                    FaceDetection.instance.opencvEditPiexl(file.absolutePath)
+                img2.setImageBitmap(bitmap)
             } else {
                 //建议使用
                 bitmap =
-                    BitmapFactory.decodeFile("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg")
+                    BitmapFactory.decodeFile(file.absolutePath)
                 FaceDetection.instance.loadBitmapEditPiexl(bitmap,object :Runnable{
                     override fun run() {
                         img2.setImageBitmap(bitmap)
                     }
 
-                });
+                })
             }
 
 
@@ -100,9 +114,19 @@ class NativeFragment : Fragment(), View.OnClickListener {
 
     private fun opencvAddWeight(view: View) {
         try {
+
+            val file=
+                File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg");
+            val file1=
+                File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250508104604.jpg");
+            if(!file.exists()||!file.exists()){
+                Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+                return
+            }
+
             val bitmap = FaceDetection.instance.opencvAddWeight(
-                "/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg",
-                "/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250508104604.jpg"
+                file.absolutePath,
+                file1.absolutePath,
             )
             img2.setImageBitmap(bitmap);
         } catch (e: Exception) {
@@ -112,9 +136,16 @@ class NativeFragment : Fragment(), View.OnClickListener {
 
     private fun opencvSaturationBrightnessContrast(view: View) {
         try {
+
+            val file=
+                File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg");
+            if(!file.exists()){
+                Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+                return
+            }
             val loadPreMemory = getMemoryInfo(requireContext())
             val bitmap =
-                FaceDetection.instance.opencvSaturationBrightnessContrast("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg")
+                FaceDetection.instance.opencvSaturationBrightnessContrast(file.absolutePath)
             img2.setImageBitmap(bitmap);
             val loadLastMemory = getMemoryInfo(requireContext())
             println("opencvSaturationBrightnessContrast loadPreMemory = [${loadPreMemory}] loadLastMemory = [${loadLastMemory}]")
