@@ -54,7 +54,6 @@ class MatFragment : Fragment() {
         setBitmapPixel(bitmap,binding)
         nativeBitmapPixel(bitmap,binding)
 
-
     }
 
     private fun nativeBitmapPixel(bitmap: Bitmap, binding: FragmentGalleryBinding) {

@@ -24,9 +24,9 @@
         tools:layout="@layout/fragment_slideshow" />
     <fragment
         android:id="@+id/nav_1"
-        android:name="com.yaxiu.opencv.ui.face.FaceRecognitionFragment"
-        android:label="@string/menu_home"
-        tools:layout="@layout/fragment_face" />
+        android:name="com.yaxiu.opencv.ui.qqeffects.QQEffectsFragment"
+        android:label="@string/menu_qq_effects"
+        tools:layout="@layout/fragment_q_q_effects" />
 
     <fragment
         android:id="@+id/nav_2"

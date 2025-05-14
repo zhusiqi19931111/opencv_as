@@ -1,12 +1,14 @@
-#include <jni.h>
+#include "TupleVaArgFun.hpp"
 #include <string>
+#include "stdio.h"
 #include <android/log.h>
 #include <opencv2/opencv.hpp>
 #include <android/bitmap.h>
 #include "MatFun.h"
+#include "log.h"
+#include "TupleVaArgFun.hpp"
+#include "JniThreadFun.hpp"
 
-#define TAG "OPENCV"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,TAG,__VA_ARGS__)
 using namespace std;
 using namespace cv;
 
@@ -18,6 +20,12 @@ void bitmap2Mat(JNIEnv *env, Mat &mat, jobject bitmap);
 void mat2Bitmap(JNIEnv *env, Mat &mat, jobject bitmap);
 void nativeBitmapPixel(JNIEnv *env, jobject thiz, jobject bitmap);
 void nativeBitmapPixel2(JNIEnv *env, jobject thiz, jobject bitmap);
+}
+JavaVM *g_vm = nullptr; // 全局JavaVM指针
+// 在JNI_OnLoad中保存JavaVM
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    g_vm = vm;
+    return JNI_VERSION_1_6;
 }
 
 void bitmap2Mat(JNIEnv *env, Mat &mat, jobject bitmap) {
@@ -157,15 +165,15 @@ Java_com_yaxiu_opencv_FaceDetection_opencvUpdateMat(JNIEnv *env, jobject thiz,
     const char *path = env->GetStringUTFChars(pathsrc, JNI_FALSE);
     Mat src = imread(path);
     if (src.empty()) {
-        cout << "为找到图片资源" << endl;
+        LOGE("无图片资源");
         return;
     }
 
     //opencv 提供灰度图源码
     // Mat dst;
     // cvtColor(src,dst,COLOR_BGR2GRAY);
+    LOGE("rows:%d cols:%d channels:%d", src.rows, src.cols, src.channels());
 
-    cout << "rows:" << src.rows << "cols:" << src.cols << "channels:" << src.channels() << endl;
     //灰度值
     for (int i = 0; i < src.rows; i++) {
         uchar *start_pixels = src.ptr<uchar>(i);
@@ -313,13 +321,14 @@ void nativeBitmapPixel2(JNIEnv *env, jobject thiz, jobject bitmap) {
 
     } else if (info.format == ANDROID_BITMAP_FORMAT_RGB_565) {//
         for (int i = 0; i < info.width * info.height; ++i) {
-            uint16_t *pixel_p = reinterpret_cast<uint16_t*>(pixels) + i;//i 切勿写成1
+            uint16_t *pixel_p = reinterpret_cast<uint16_t *>(pixels) + i;//i 切勿写成1
             uint16_t pixel = *pixel_p;
             // 8888 -> 565
             int r = ((pixel >> 11) & 0x1f) << 3;
             int g = ((pixel >> 5) & 0x3f) << 2;
             int b = (pixel & 0x1f) << 3;
-            int grey = (int) (0.213f * r + 0.715f * g + 0.072f * b); //此灰度值公式仅使用与4通道，如果是2通道的话，需要位移为四通道
+            int grey = (int) (0.213f * r + 0.715f * g +
+                              0.072f * b); //此灰度值公式仅使用与4通道，如果是2通道的话，需要位移为四通道
             *pixel_p = ((grey >> 3) << 11) | ((grey >> 2) << 5) | (grey >> 3);
         }
 
@@ -331,6 +340,201 @@ void nativeBitmapPixel2(JNIEnv *env, jobject thiz, jobject bitmap) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_yaxiu_opencv_FaceDetection_matObj(JNIEnv *env, jobject thiz) {
-   MatFun matfun= MatFun();
-    matfun.matObj("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250425172853.jpg");
+    MatFun matfun = MatFun();
+    char *path = "/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250508104604.jpg";
+
+    jstring jpath = env->NewStringUTF(path);
+    matfun.matObj(env, jpath);
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/io/FileNotFoundException");
+        env->ThrowNew(no_such_clz,
+                      "Unable to decode file: java.io.FileNotFoundException NoSuchFieldException open failed: ENOENT (No such file or directory)");
+        env->DeleteLocalRef(no_such_clz);
+    }
+    //
+}
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_yaxiu_opencv_FaceDetection_createBitmapByDecodeFile(JNIEnv *env, jobject thiz,
+                                                             jstring path) {
+    MatFun matfun = MatFun();
+    jobject bitmap = matfun.createBitmapByDecodeFile(env, path);
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/io/FileNotFoundException");
+        env->ThrowNew(no_such_clz,
+                      "Unable to decode file: java.io.FileNotFoundException NoSuchFieldException open failed: ENOENT (No such file or directory)");
+        env->DeleteLocalRef(no_such_clz);
+        return nullptr;
+    }
+    LOGD("createBitmapByDecodeFile success");
+    return bitmap;
+}
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_yaxiu_opencv_FaceDetection_opencvEditPiexl(JNIEnv *env, jobject thiz, jstring path) {
+    MatFun matfun = MatFun();
+    jobject bitmap = matfun.pixelEdit(env, path);
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/io/FileNotFoundException");
+        env->ThrowNew(no_such_clz,
+                      "Unable to decode file: java.io.FileNotFoundException NoSuchFieldException open failed: ENOENT (No such file or directory)");
+        env->DeleteLocalRef(no_such_clz);
+        return nullptr;
+    }
+    LOGD("opencvEditPiexl success");
+    return bitmap;
+
+}
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_yaxiu_opencv_FaceDetection_opencvAddWeight(JNIEnv *env, jobject thiz, jstring path1,
+                                                    jstring path2) {
+    MatFun matfun = MatFun();
+    jobject bitmap = matfun.imaAdd(env, path1, path2);
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/io/FileNotFoundException");
+        env->ThrowNew(no_such_clz,
+                      "Unable to decode file: java.io.FileNotFoundException NoSuchFieldException open failed: ENOENT (No such file or directory)");
+        env->DeleteLocalRef(no_such_clz);
+        return nullptr;
+    }
+    LOGD("addWeight success");
+    return bitmap;
+}
+
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_yaxiu_opencv_FaceDetection_opencvSaturationBrightnessContrast(JNIEnv *env, jobject thiz,
+                                                                       jstring path) {
+    MatFun matfun = MatFun();
+    jobject bitmap = matfun.saturationBrightnessContrast(env, path);
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/io/FileNotFoundException");
+        env->ThrowNew(no_such_clz,
+                      "Unable to decode file: java.io.FileNotFoundException NoSuchFieldException open failed: ENOENT (No such file or directory)");
+        env->DeleteLocalRef(no_such_clz);
+        return nullptr;
+    }
+    LOGD("opencvSaturationBrightnessContrast success");
+    return bitmap;
+}
+
+void loadBitmapEditPiexlRun(JniThreadFun *fun) {
+    fun->run_task([](JNIEnv *env, jobject &bitmap, jobject& callback) -> void {
+        MatFun matfun = MatFun();
+        matfun.loadBitmapPixelEdit(env, bitmap);
+        LOGD("loadBitmapEditPiexl success");
+        const char *className = "android/os/Handler";
+        jclass handlerClass = env->FindClass(className);
+        if (handlerClass == nullptr) {
+            return;
+        }
+        jmethodID constructor = env->GetMethodID(handlerClass, "<init>", "(Landroid/os/Looper;)V");
+        if (constructor == nullptr) {
+            env->DeleteLocalRef(handlerClass);
+            return; // 方法找不到
+        }
+        jclass lopperClass = env->FindClass("android/os/Looper");
+        if (lopperClass == nullptr) {
+            return;
+        }
+        jmethodID getMainLooper = env->GetStaticMethodID(lopperClass, "getMainLooper",
+                                                   "()Landroid/os/Looper;");
+        if (getMainLooper == nullptr) {
+            env->DeleteLocalRef(lopperClass);
+            return; // 方法找不到
+        }
+        jobject lopper = env->CallStaticObjectMethod(lopperClass, getMainLooper);
+
+        jobject handler = env->NewObject(handlerClass, constructor, lopper);
+
+        jmethodID post = env->GetMethodID(handlerClass, "post","(Ljava/lang/Runnable;)Z");
+
+        // 5. 提交到主线程
+        env->CallBooleanMethod(handler,post,callback);
+
+        env->DeleteLocalRef(lopper);
+        env->DeleteLocalRef(handler);
+
+        env->DeleteLocalRef(lopperClass);
+        env->DeleteLocalRef(handlerClass);
+    });
+
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_loadBitmapEditPiexl(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                        jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread(loadBitmapEditPiexlRun, safeCallback);
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_magnifierSpecialEffects(JNIEnv *env, jobject thiz,
+                                                            jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.magnifierSpecialEffects(env, bitmap);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_oilPaintingSpecialEffects(JNIEnv *env, jobject thiz,
+                                                              jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.oilPaintingSpecialEffects(env, bitmap);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_glassSpecialEffects(JNIEnv *env, jobject thiz, jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.glassSpecialEffects(env, bitmap);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_inverseWorldSpecialEffects(JNIEnv *env, jobject thiz,
+                                                               jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.inverseWorldSpecialEffects(env, bitmap);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_mirrorSpecialEffects(JNIEnv *env, jobject thiz,
+                                                         jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.mirrorSpecialEffects(env, bitmap);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_mosaicSpecialEffects(JNIEnv *env, jobject thiz,
+                                                         jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.mosaicSpecialEffects(env, bitmap);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_reliefSpecialEffects(JNIEnv *env, jobject thiz,
+                                                         jobject bitmap) {
+    MatFun matfun = MatFun();
+    matfun.reliefSpecialEffects(env, bitmap);
 }
