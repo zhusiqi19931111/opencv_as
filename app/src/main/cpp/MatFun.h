@@ -6,7 +6,6 @@
 #define OPENCV_MATFUN_H
 #include <string>
 #include <jni.h>
-#include <random> // C++11 随机数库
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -14,6 +13,7 @@
 #include "log.h"
 #include <opencv2/opencv.hpp>
 #include <android/bitmap.h>
+#include "Random.hpp"
 using namespace cv;
 using namespace std;
 
@@ -58,7 +58,7 @@ public:
 
     void oilPaintingSpecialEffects2(JNIEnv *env, jobject bitmap);
 
-    void croppingBitmap(JNIEnv *env, jobject bitmap);
+    jobject croppingBitmap(JNIEnv *env, jobject bitmap);
 
     void fishEyeSpecialEffects(JNIEnv *env, jobject bitmap);
 
@@ -70,6 +70,9 @@ public:
                                          bool lensEffect, bool fishEye);
     friend void* getMouseCallbackUserData();
 
+    jobject rotateImage(JNIEnv *env, jobject bitmap);
+
+    void matrixTransform(JNIEnv *env, jobject bitmap);
 };
 
 

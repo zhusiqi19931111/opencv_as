@@ -2,8 +2,8 @@
 // Created by cherish on 2025/5/13.
 //
 
-#ifndef OPENCV_TUPLEVAARGFUN_H
-#define OPENCV_TUPLEVAARGFUN_H
+#ifndef OPENCV_TUPLEVAARGFUN_HPP
+#define OPENCV_TUPLEVAARGFUN_HPP
 #include <iostream>
 #include <tuple>
 #include <utility>
@@ -30,4 +30,4 @@ template<typename T>
 void relay(T&& arg) {  // 万能引用
     process(std::forward<T>(arg));  // 完美转发
 }
-#endif //OPENCV_TUPLEVAARGFUN_H
+#endif //OPENCV_TUPLEVAARGFUN_HPP

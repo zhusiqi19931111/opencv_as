@@ -1,180 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui.qqeffects.QQEffectsFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:context=".ui.native.NativeFragment">
+        android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btn1"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="浮雕特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            android:orientation="vertical"
+            tools:context=".ui.native.NativeFragment">
 
-        <Button
-            android:id="@+id/btn2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="马赛克特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <androidx.constraintlayout.helper.widget.Flow
+                android:id="@+id/flow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                app:constraint_referenced_ids="btn1,btn2,btn3,btn4,btn5,btn6,btn7,btn8,btn9,btn10"
+                app:flow_horizontalGap="8dp"
+                app:flow_horizontalStyle="spread_inside"
+                app:flow_verticalGap="8dp"
+                app:flow_wrapMode="chain"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-            android:id="@+id/btn9"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="面部马赛克特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="浮雕特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-        <Button
-            android:id="@+id/btn3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="镜像特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="马赛克特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-        <Button
-            android:id="@+id/btn4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="逆世界特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
-        <Button
-            android:id="@+id/btn5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="毛玻璃特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="面部马赛克特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-        <Button
-            android:id="@+id/btn6"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="油画特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="镜像特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-        <Button
-            android:id="@+id/btn7"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="鱼眼特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="逆世界特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-        <Button
-            android:id="@+id/btn8"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="局部放大镜特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="毛玻璃特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
 
-        <Button
-            android:id="@+id/btn10"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="裁剪特效"
-            android:textAlignment="center"
-            android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="油画特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/btn7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="鱼眼特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/btn8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="局部放大镜特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/btn10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="裁剪特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="800dp">
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:layout_height="wrap_content">
 
             <ImageView
                 android:id="@+id/img1"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                app:layout_constraintBottom_toTopOf="@id/img3"
-                app:layout_constraintEnd_toStartOf="@id/img2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
                 android:id="@+id/tv_lab1"
-                android:padding="10dp"
-                android:textSize="20sp"
-                android:textColor="@color/purple_200"
                 android:layout_width="wrap_content"
-                app:layout_constraintTop_toTopOf="@+id/img1"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:textColor="@color/purple_200"
+                android:textSize="20sp"
                 app:layout_constraintStart_toStartOf="@+id/img1"
-                android:layout_height="wrap_content"/>
+                app:layout_constraintTop_toTopOf="@+id/img1" />
+
             <ImageView
                 android:id="@+id/img2"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                app:layout_constraintBottom_toTopOf="@id/img3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/img1"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/img1" />
+
             <TextView
                 android:id="@+id/tv_lab2"
-                android:padding="10dp"
-                android:textSize="20sp"
-                android:textColor="@color/purple_200"
                 android:layout_width="wrap_content"
-                app:layout_constraintTop_toTopOf="@+id/img2"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:textColor="@color/purple_200"
+                android:textSize="20sp"
                 app:layout_constraintStart_toStartOf="@+id/img2"
-                android:layout_height="wrap_content"/>
+                app:layout_constraintTop_toTopOf="@+id/img2" />
+
             <ImageView
                 android:id="@+id/img3"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/img4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/img1" />
+                app:layout_constraintTop_toBottomOf="@id/img2" />
+
             <TextView
                 android:id="@+id/tv_lab3"
-                android:padding="10dp"
-                android:textSize="20sp"
-                android:textColor="@color/purple_200"
                 android:layout_width="wrap_content"
-                app:layout_constraintTop_toTopOf="@+id/img3"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:textColor="@color/purple_200"
+                android:textSize="20sp"
                 app:layout_constraintStart_toStartOf="@+id/img3"
-                android:layout_height="wrap_content"/>
+                app:layout_constraintTop_toTopOf="@+id/img3" />
+
             <ImageView
                 android:id="@+id/img4"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/img3"
-                app:layout_constraintTop_toBottomOf="@id/img2" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/img3" />
+
             <TextView
                 android:id="@+id/tv_lab4"
-                android:padding="10dp"
-                android:textSize="20sp"
-                android:textColor="@color/purple_200"
                 android:layout_width="wrap_content"
-                app:layout_constraintTop_toTopOf="@+id/img4"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:textColor="@color/purple_200"
+                android:textSize="20sp"
                 app:layout_constraintStart_toStartOf="@+id/img4"
-                android:layout_height="wrap_content"/>
+                app:layout_constraintTop_toTopOf="@+id/img4" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

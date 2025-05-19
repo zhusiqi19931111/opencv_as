@@ -290,12 +290,36 @@ jobject MatFun::createBitmapByDecodeFile(JNIEnv *env, jstring path) {
 }
 
 jobject MatFun::createBitmap(JNIEnv *env, jint width, jint height, int type) {
-    // Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    // Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);   ALPHA_8, RGB_565, ARGB_4444, ARGB_8888, RGBA_F16, HARDWARE, RGBA_1010102
     int wid = width;
     int hei = height;
-
-    jclass configClass = env->FindClass("android/graphics/Bitmap$Config");
     char *name = "ARGB_8888";
+    if (type == 1) {
+        name = "ALPHA_8";
+    } else if (type == 3) {
+        name = "RGB_565";
+    } else if (type == 4) {
+        name = "ARGB_4444";
+    } else if (type == 5) {
+        name = "ARGB_8888";
+    } else if (type == 6) {
+        name = "RGBA_F16";
+    } else if (type == 7) {
+        name = "HARDWARE";
+    } else if (type == 8) {
+        name = "RGBA_1010102";
+    } else if (type == CV_8UC1) {
+        name = "ALPHA_8";
+    } else if (type == CV_8UC2) {
+        name = "ALPHA_8";
+    } else if (type == CV_8UC3) {
+        name = "RGB_565";
+    } else if (type == CV_8UC4) {
+        name = "ARGB_8888";
+    }
+    LOGE("createBitmap  width=%d height=%d type=%d name=%s", width, height, type, name);
+    jclass configClass = env->FindClass("android/graphics/Bitmap$Config");
+
     jstring configValue = env->NewStringUTF(name);
     jmethodID configmethodID = env->GetStaticMethodID(configClass, "valueOf",
                                                       "(Ljava/lang/String;)Landroid/graphics/Bitmap$Config;");
@@ -366,7 +390,8 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
     if (lockPixelsRes < 0) {
         return lockPixelsRes;
     }
-    LOGI("mat2Bitmap current format:%d", bitmap_info.format);
+    LOGI("mat2Bitmap current format:%d type:%d height：%d  width：%d", bitmap_info.format, mat.type(),
+         bitmap_info.height, bitmap_info.width);
 
     if (bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {//对应CV_8UC4
         Mat temp = Mat(bitmap_info.height, bitmap_info.width, CV_8UC4, pixelPtr);
@@ -376,6 +401,8 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
             cvtColor(mat, temp, cv::COLOR_RGB2RGBA);
         } else if (mat.type() == CV_8UC4) {
             mat.copyTo(temp);
+        } else {
+            LOGE("mat2Bitmap current type:%d unknown don't handler", mat.type());
         }
 
     } else if (bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565) {//对应CV_8UC2
@@ -386,6 +413,8 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
             cvtColor(mat, temp, cv::COLOR_RGB2BGR565);
         } else if (mat.type() == CV_8UC4) {
             cvtColor(mat, temp, cv::COLOR_RGBA2BGR565);
+        } else {
+            LOGE("mat2Bitmap current type:%d unknown don't handler", mat.type());
         }
 
     } else {
@@ -534,25 +563,41 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring filName, jobject bitm
 
             int src_w = faceRect.width;
             int src_h = faceRect.height;
-            int rows_start = y ;
+
+            int rows_start = y;
             int rows_end = y + src_h;
             int cols_start = x;
-            int cols_end = x+src_w;
-            int size = 10;
-            LOGE("faceMosaicSpecialEffects x = %d y = %d width = %d height = %d", x, y, src_w,
-                 src_h);
-            for (int row = rows_start; row < rows_end; row += size) {
-                for (int col = cols_start; col < cols_end; col += size) {
+            int cols_end = x + src_w;
+            int blockSize = 5;
+            LOGE("faceMosaicSpecialEffects x = %d y = %d width = %d height = %d",
+                 x, y, src_w,src_h);
+            LOGE("faceMosaicSpecialEffects rows_start = %d rows_end = %d cols_start = %d cols_end = %d",
+                 rows_start, rows_end, cols_start,cols_end);
+            //方式1
+           /* for (int row = rows_start; row < rows_end; row += blockSize) {
+                for (int col = cols_start; col < cols_end; col += blockSize) {
+                    // 计算当前 block 实际宽高，防止越界
+                    int blockWidth = min(blockSize, cols_end- col);
+                    int blockHeight = min(blockSize, rows_end - row);
+
                     int pixel_c = hist.at<int>(row, col);
-                    for (int m_rows = 1; m_rows < size; ++m_rows) {
-                        for (int m_cols = 1; m_cols < size; ++m_cols) {
+                    for (int m_rows = 1; m_rows < blockWidth; ++m_rows) {
+                        for (int m_cols = 1; m_cols < blockHeight; ++m_cols) {
                             hist.at<int>(row + m_rows, col + m_cols) = pixel_c;
                         }
 
                     }
                 }
-            }
+            }*/
+            //方式2
+            RNG rng(time(NULL));
+            for (int row = rows_start; row < rows_end-blockSize; ++row) {
+                for (int col =cols_start; col < cols_end - blockSize; ++col) {
+                    int random = rng.uniform(0, blockSize);
+                    hist.at<int>(row, col) = hist.at<int>(row + random, col + random);
+                }
 
+            }
             mat2bitmap(env, hist, bitmap);
         }
 
@@ -576,12 +621,8 @@ void MatFun::mirrorSpecialEffects(JNIEnv *env, jobject bitmap) {
         LOGE("mirrorSpecialEffects bitmap2mat error");
         return;
     }
-    random_device rd;  // 用于获取随机种子
-    mt19937 gen(rd()); // 使用Mersenne Twister引擎
 
-    // 2. 定义分布 [0, 2] 闭区间
-    uniform_int_distribution<> dis(0, 2);
-    int random_num = dis(gen);
+    int random_num = Random().random_start_end(0, 2);
     LOGE("mirrorSpecialEffects channels = %d random_num = %d", mat.channels(), random_num);
     Mat mirrorMat = Mat::zeros(mat.size(), mat.type());
 
@@ -897,56 +938,20 @@ void MatFun::oilPaintingSpecialEffects(JNIEnv *env, jobject bitmap) {
 /**
  * bitmap 裁剪
  */
-void MatFun::croppingBitmap(JNIEnv *env, jobject bitmap) {
+jobject MatFun::croppingBitmap(JNIEnv *env, jobject bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
     Mat resizeMat;
     resize(mat, resizeMat, Size(mat.cols >> 1, mat.rows >> 1));
-    LOGE("croppingBitmap mat cols:%d rows:%d resizeMat cols:%d rows:%d", mat.cols, mat.rows,
+
+
+    jobject bitmap_clip = createBitmap(env, mat.cols >> 1, mat.rows >> 1, mat.type());
+
+    LOGE("croppingBitmap mat cols:%d rows:%d resizeMat cols:%d rows:%d bitmap_clip", mat.cols,
+         mat.rows,
          resizeMat.cols, resizeMat.rows);
-
-    AndroidBitmapInfo bitmap_info;
-    void *pixelPtr;
-    int getInfoRes = AndroidBitmap_getInfo(env, bitmap, &bitmap_info);
-    if (getInfoRes < 0) {
-        return;
-    }
-    // 检查 Bitmap 格式
-    CV_Assert(bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
-              bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565);
-    int lockPixelsRes = AndroidBitmap_lockPixels(env, bitmap, &pixelPtr);
-    if (lockPixelsRes < 0) {
-        return;
-    }
-
-    LOGI("mat2Bitmap current format:%d", bitmap_info.format);
-
-    if (bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888) {//对应CV_8UC4
-        Mat temp = Mat(bitmap_info.height >> 1, bitmap_info.width >> 1, CV_8UC4, pixelPtr);
-        if (resizeMat.type() == CV_8UC1) {
-            cvtColor(resizeMat, temp, cv::COLOR_GRAY2RGBA);
-        } else if (resizeMat.type() == CV_8UC3) {
-            cvtColor(resizeMat, temp, cv::COLOR_RGB2RGBA);
-        } else if (resizeMat.type() == CV_8UC4) {
-            resizeMat.copyTo(temp);
-        }
-
-    } else if (bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565) {//对应CV_8UC2
-        Mat temp = Mat(bitmap_info.height >> 1, bitmap_info.width >> 1, CV_8UC2, pixelPtr);
-        if (resizeMat.type() == CV_8UC1) {
-            cvtColor(resizeMat, temp, cv::COLOR_GRAY2BGR565);
-        } else if (resizeMat.type() == CV_8UC3) {
-            cvtColor(resizeMat, temp, cv::COLOR_RGB2BGR565);
-        } else if (resizeMat.type() == CV_8UC4) {
-            cvtColor(resizeMat, temp, cv::COLOR_RGBA2BGR565);
-        }
-
-    } else {
-        LOGE("mat2Bitmap current format:%d unknown don't handler", bitmap_info.format);
-    }
-
-    AndroidBitmap_unlockPixels(env, bitmap);
-
+    mat2bitmap(env, resizeMat, bitmap_clip);
+    return bitmap_clip;
 }
 
 /**
@@ -1032,8 +1037,9 @@ void *getMouseCallbackUserData() {
     return userData;
 }
 
-void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap,Mat &src, Mat &dst, Point center, int radius, float magnification,
-                             bool lensEffect = true, bool fishEye = true) {
+void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap, Mat &src, Mat &dst, Point center,
+                                     int radius, float magnification,
+                                     bool lensEffect = true, bool fishEye = true) {
     src.copyTo(dst);
 
     // 参数检查
@@ -1042,7 +1048,7 @@ void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap,Mat &src, Mat &
     // 确保中心在图像范围内
     center.x = max(radius, min(src.cols - radius, center.x));
     center.y = max(radius, min(src.rows - radius, center.y));
-    LOGE("advancedMagnifierEffect x%d y%d",  center.x,  center.y);
+    LOGE("advancedMagnifierEffect x%d y%d", center.x, center.y);
     // 创建放大区域蒙版
     Mat mask = Mat::zeros(src.size(), CV_8UC1);
     circle(mask, center, radius, Scalar(255), -1);
@@ -1093,7 +1099,7 @@ void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap,Mat &src, Mat &
         circle(dst, center, radius, Scalar(255, 255, 255), 3);
         circle(dst, center, radius - 2, Scalar(0, 0, 0), 1);
         LOGE("advancedMagnifierEffect circle");
-        mat2bitmap(env, dst, bitmap);
+
     }
 }
 
@@ -1112,8 +1118,10 @@ void MatFun::magnifierSpecialEffects(JNIEnv *env, jobject bitmap) {
     float magnification = 2.0f;
     Mat dst;
     // 初始显示
-    advancedMagnifierEffect(env, bitmap,mat, dst, Point(mat.cols >> 1, mat.rows >> 1), radius, magnification,
+    advancedMagnifierEffect(env, bitmap, mat, dst, Point(0, 0), radius,
+                            magnification,
                             true, false);
+    mat2bitmap(env, dst, bitmap);
 
 
 }
@@ -1123,14 +1131,150 @@ void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject bi
 
     Mat mat;
     bitmap2mat(env, mat, bitmap);
-    LOGE("advancedMagnifierEffect x%f y%f", x, y);
 
     // 参数
     int radius = 100;
     float magnification = 2.0f;
     Mat dst;
+
+    int pointx=x;
+    int pointy=y;
+
     // 初始显示
-    advancedMagnifierEffect(env,bitmap,mat, dst, Point(x + radius / 2, y + radius / 2), radius, magnification,
+    advancedMagnifierEffect(env, bitmap, mat, dst, Point(pointx, pointy), radius,
+                            magnification,
                             true, false);
+    mat2bitmap(env, dst, bitmap);
 }
 
+
+jobject MatFun::rotateImage(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    int chanel = mat.channels();
+    LOGE("rotateImage chanel=%d type=%d CV_8UC0=%d CV_8UC1=%d CV_8UC2=%d CV_8UC3=%d CV_8UC4=%d width=%d height=%d",
+         chanel, mat.type(), CV_8U, CV_8UC1, CV_8UC2, CV_8UC3, CV_8UC4, mat.cols, mat.rows);
+    int random = Random().random_start_end(0, 4);
+
+    if (random == 0) {//顺时针旋转90 度
+        int res_w = mat.rows;
+        int res_h = mat.cols;
+        Mat des = Mat::zeros(res_h, res_w, mat.type());
+        for (int row = 0; row < res_h; ++row) {//rows高度 相当于 Y 轴
+            for (int col = 0; col < res_w; ++col) {//cols 宽度 相当于 x 轴
+                int src_row = res_w - col - 1;
+                int src_col = row;
+                des.at<int>(row, col) = mat.at<int>(src_row, src_col);
+
+            }
+        }
+        //bitmap 宽高被调换
+        jobject rotateBitmap = createBitmap(env, res_w, res_h, des.type());
+        mat2bitmap(env, des, rotateBitmap);
+
+        LOGE("顺时针旋转90 度 width=%d height=%d", des.cols, des.rows);
+        return rotateBitmap;
+
+    } else if (random == 1) {//逆时针旋转90 度
+        int res_w = mat.rows;
+        int res_h = mat.cols;
+        Mat des = Mat::zeros(res_h, res_w, mat.type());
+        for (int row = 0; row < res_h; ++row) {//rows高度 相当于 Y 轴
+            for (int col = 0; col < res_w; ++col) {//cols 宽度 相当于 x 轴
+                int src_row = col;
+                int src_col = res_h - row - 1;
+                des.at<int>(row, col) = mat.at<int>(src_row, src_col);
+
+            }
+        }
+        //bitmap 宽高被调换
+        jobject rotateBitmap = createBitmap(env, res_w, res_h, des.type());
+        mat2bitmap(env, des, rotateBitmap);
+        LOGE("逆时针旋转90 度 width=%d height=%d", des.cols, des.rows);
+        return rotateBitmap;
+    } else if (random == 2) {//上下翻转180 度 ,x(cols) 上下对调，y(rows) 不变
+        Mat des = Mat::zeros(mat.size(), mat.type());
+        for (int row = 0; row < mat.rows; ++row) {//rows高度 相当于 Y 轴
+            for (int col = 0; col < mat.cols; ++col) {//cols 宽度 相当于 x 轴
+                des.at<int>(row, col) = mat.at<int>(mat.rows - row - 1, col);
+
+            }
+        }
+        mat2bitmap(env, des, bitmap);
+        LOGE("上下翻转180 度 , y(rows)上下对调，x(cols) 左右不变");
+        return bitmap;
+    } else if (random == 3) {//左右翻转180 度 ，x(cols) 不变，y(rows) 左右对调
+        Mat des = Mat::zeros(mat.size(), mat.type());
+        for (int row = 0; row < mat.rows; ++row) {//rows高度 相当于 Y 轴
+            for (int col = 0; col < mat.cols; ++col) {//cols 宽度 相当于 x 轴
+                des.at<int>(row, col) = mat.at<int>(row, mat.cols - col - 1);
+
+            }
+        }
+        mat2bitmap(env, des, bitmap);
+        LOGE("左右翻转180 度 ，y(rows) 上下不变，x(cols)左右对调");
+        return bitmap;
+    } else if (random == 4) {//上下左右翻转
+        Mat des = Mat::zeros(mat.size(), mat.type());
+        for (int row = 0; row < mat.rows; ++row) {//rows高度 相当于 Y 轴
+            for (int col = 0; col < mat.cols; ++col) {//cols 宽度 相当于 x 轴
+                des.at<int>(row, col) = mat.at<int>(mat.rows - row - 1, mat.cols - col - 1);
+
+            }
+        }
+        mat2bitmap(env, des, bitmap);
+        LOGE("上下左右翻转");
+        return bitmap;
+    }
+
+    return bitmap;
+}
+
+/**
+ *  Point2f 和 Mat 在 OpenCV 中各有用途：
+    Point2f 适合表示和操作单个点
+    Mat 适合存储和处理点集或进行矩阵运算
+    getAffineTransform 等函数通过接受 Point2f 数组并返回 Mat 矩阵，实现了两者之间的桥梁作用
+ * @param env
+ * @param bitmap
+ */
+void MatFun::matrixTransform(JNIEnv *env, jobject bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    Mat dst;
+    Mat M = Mat(2, 3, CV_32FC1); //2*3 矩阵
+    M.at<float>(0, 0) = 1;
+    M.at<float>(0, 1) = 2;
+    M.at<float>(0, 2) = 3;
+
+    M.at<float>(1, 0) = 3;
+    M.at<float>(1, 1) = 2;
+    M.at<float>(1, 2) = 1;
+    //系统 仿射变换
+    //原理如下：
+    /*旋转 (线性变换)
+    平移 (向量加)
+    缩放操作 (线性变换)*/
+    Point2f srcTri[3];
+    Point2f dstTri[3];
+    /**
+     * x' = a11 * x + a12 * y + b1
+       y' = a21 * x + a22 * y + b2
+     */
+    // 设置源点
+    srcTri[0] = Point2f(0, 0);
+    srcTri[1] = Point2f(1, 0);
+    srcTri[2] = Point2f(0, 1);
+
+    // 设置目标点
+    dstTri[0] = Point2f(0, 0);
+    dstTri[1] = Point2f(1, 0.5);  // 添加倾斜
+    dstTri[2] = Point2f(0, 1);  // 添加倾斜
+
+    // 计算仿射变换矩阵
+    Mat warpMat = getAffineTransform(srcTri, dstTri);
+
+    cout << "M" << M << "warp_mat:" << warpMat << endl;
+    warpAffine(mat, dst, warpMat, mat.size(), INTER_LINEAR);
+    mat2bitmap(env, dst, bitmap);
+}

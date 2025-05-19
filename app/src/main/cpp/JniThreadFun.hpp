@@ -2,8 +2,8 @@
 // Created by cherish on 2025/5/13.
 //
 
-#ifndef OPENCV_JNITHREADFUN_H
-#define OPENCV_JNITHREADFUN_H
+#ifndef OPENCV_JNITHREADFUN_HPP
+#define OPENCV_JNITHREADFUN_HPP
 
 #include <jni.h>
 #include <mutex>
@@ -25,21 +25,30 @@ public:
 
     //禁止拷贝
     JniThreadFun(const JniThreadFun &fun) = delete;
-    JniThreadFun& operator=(const JniThreadFun&) = delete;
+
+    JniThreadFun &operator=(const JniThreadFun &) = delete;
 
     ~JniThreadFun();
 
-    void run_task(void(*execute)(JNIEnv *env, JniThreadFun *self, jobject &params, jobject callback));
+    void
+    run_task(void(*execute)(JNIEnv *env, JniThreadFun *self, jobject &params, jobject callback));
 
-    void run_task_globle(void(*execute)(JNIEnv *env,jobject &params, jobject callback));
+    void run_task_globle(void(*execute)(JNIEnv *env, jobject &params, jobject callback));
 
     JNIEnv *getEnv();
 
     friend void
-    executeJavaOnMain(JNIEnv *env, JniThreadFun *self, jobject &bitmap, jobject callback);
+    executeJavaOnMainWithRelease(JNIEnv *env, JniThreadFun *self, jobject callback);
 
     friend void
-    executeJavaOnMain(JNIEnv *env, jobject &bitmap, jobject callback);
+    executeJavaOnMain(JNIEnv *env, jobject callback);
+
+    friend void
+    executeJavaOnMainWithReleaseAndResult(JNIEnv *env, JniThreadFun *self, jobject &bitmap,
+                                          jobject callback);
+
+    friend void
+    executeJavaOnMainWithResult(JNIEnv *env, jobject &bitmap, jobject callback);
 
 private:
     void maybeDetach(JNIEnv *env);
@@ -83,7 +92,7 @@ JNIEnv *JniThreadFun::getEnv() {
 }
 
 void JniThreadFun::run_task(
-        void(*execute)(JNIEnv *env, JniThreadFun* self, jobject &params, jobject callback)) {
+        void(*execute)(JNIEnv *env, JniThreadFun *self, jobject &params, jobject callback)) {
 
     lock_guard<mutex> lock(m_mutex);  // 自动加锁解锁
     LOGE("JniThreadFun run_task");
@@ -93,7 +102,7 @@ void JniThreadFun::run_task(
     execute(env, this, params, callback);
 }
 
-void executeJavaOnMain(JNIEnv *env, JniThreadFun *self, jobject &bitmap, jobject callback) {
+void executeJavaOnMainWithRelease(JNIEnv *env, JniThreadFun *self, jobject callback) {
     const char *className = "android/os/Handler";
     jclass handlerClass = env->FindClass(className);
     if (handlerClass == nullptr) {
@@ -135,20 +144,22 @@ void executeJavaOnMain(JNIEnv *env, JniThreadFun *self, jobject &bitmap, jobject
 
 }
 
+void executeJavaOnMainWithReleaseAndResult(JNIEnv *env, JniThreadFun *self, jobject &bitmap,
+                                           jobject callback) {
+    jclass callbackInMainThreadClazz = env->GetObjectClass(callback);
+    jmethodID methodId = env->GetMethodID(callbackInMainThreadClazz, "executeOnMain",
+                                          "(Ljava/lang/Object;)V");
+    env->CallVoidMethod(callback,methodId,bitmap);
+    env->DeleteLocalRef(callbackInMainThreadClazz);
+    if (self) {
+        delete self;
+        self = nullptr;
+        LOGE("delete jniThreadFun");
+    }
 
-void JniThreadFun::run_task_globle(
-        void(*execute)(JNIEnv *env, jobject &params, jobject callback)) {
-
-    lock_guard<mutex> lock(m_mutex);  // 自动加锁解锁
-    LOGE("JniThreadFun run_task");
-    // 临界区代码
-    JNIEnv *env = getEnv();
-    if (!env) return;
-    execute(env, params, callback);
-    maybeDetach(env);
 }
 
-void executeJavaOnMain(JNIEnv *env, jobject &bitmap, jobject callback) {
+void executeJavaOnMain(JNIEnv *env, jobject callback) {
     const char *className = "android/os/Handler";
     jclass handlerClass = env->FindClass(className);
     if (handlerClass == nullptr) {
@@ -185,12 +196,35 @@ void executeJavaOnMain(JNIEnv *env, jobject &bitmap, jobject callback) {
 
 }
 
+void executeJavaOnMainWithResult(JNIEnv *env, jobject &bitmap, jobject callback) {
+    jclass callbackInMainThreadClazz = env->GetObjectClass(callback);
+    jmethodID methodId = env->GetMethodID(callbackInMainThreadClazz, "executeOnMain",
+                                          "(Ljava/lang/Object;)V");
+    env->CallVoidMethod(callback,methodId,bitmap);
+    env->DeleteLocalRef(callbackInMainThreadClazz);
+
+}
+
+
+void JniThreadFun::run_task_globle(
+        void(*execute)(JNIEnv *env, jobject &params, jobject callback)) {
+
+    lock_guard<mutex> lock(m_mutex);  // 自动加锁解锁
+    LOGE("JniThreadFun run_task");
+    // 临界区代码
+    JNIEnv *env = getEnv();
+    if (!env) return;
+    execute(env, params, callback);
+    maybeDetach(env);
+}
+
+
 void JniThreadFun::maybeDetach(JNIEnv *env) {
     if (env) {
         m_vm->DetachCurrentThread();
-        env= nullptr;
+        env = nullptr;
         LOGE("JniThreadFun DetachCurrentThread");
     }
 }
 
-#endif //OPENCV_JNITHREADFUN_H
+#endif //OPENCV_JNITHREADFUN_HPP

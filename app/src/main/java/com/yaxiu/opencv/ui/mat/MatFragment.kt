@@ -23,7 +23,7 @@ class MatFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
-    private val mat = Mat()
+    private val mat = OperateBitmap()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(

@@ -1,6 +1,7 @@
 package com.yaxiu.opencv
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -27,7 +28,6 @@ class NavActivity : AppCompatActivity() {
 
         binding = ActivityNavBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
         setSupportActionBar(binding.appBarNav.toolbar)
 
         binding.appBarNav.fab.setOnClickListener { view ->

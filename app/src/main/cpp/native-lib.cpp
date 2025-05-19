@@ -163,6 +163,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_yaxiu_opencv_FaceDetection_opencvUpdateMat(JNIEnv *env, jobject thiz,
                                                     jstring pathsrc, jstring pathout) {
+
     const char *path = env->GetStringUTFChars(pathsrc, JNI_FALSE);
     Mat src = imread(path);
     if (src.empty()) {
@@ -442,7 +443,7 @@ Java_com_yaxiu_opencv_FaceDetection_loadBitmapEditPiexl(JNIEnv *env, jobject thi
             MatFun matfun = MatFun();
             matfun.loadBitmapPixelEdit(env, bitmap);
             LOGD("loadBitmapEditPiexl success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
         }, safeCallback);
@@ -466,7 +467,7 @@ Java_com_yaxiu_opencv_FaceDetection_magnifierSpecialEffects(JNIEnv *env, jobject
             MatFun matfun = MatFun();
             matfun.magnifierSpecialEffects(env, bitmap);
             LOGD("magnifierSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -493,7 +494,7 @@ Java_com_yaxiu_opencv_FaceDetection_fishEyeSpecialEffects(JNIEnv *env, jobject t
             MatFun matfun = MatFun();
             matfun.fishEyeSpecialEffects(env, bitmap);
             LOGD("fishEyeSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -520,7 +521,7 @@ Java_com_yaxiu_opencv_FaceDetection_oilPaintingSpecialEffects(JNIEnv *env, jobje
             MatFun matfun = MatFun();
             matfun.oilPaintingSpecialEffects(env, bitmap);
             LOGD("oilPaintingSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -546,7 +547,7 @@ Java_com_yaxiu_opencv_FaceDetection_glassSpecialEffects(JNIEnv *env, jobject thi
             MatFun matfun = MatFun();
             matfun.glassSpecialEffects(env, bitmap);
             LOGD("glassSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -572,7 +573,7 @@ Java_com_yaxiu_opencv_FaceDetection_inverseWorldSpecialEffects(JNIEnv *env, jobj
             MatFun matfun = MatFun();
             matfun.inverseWorldSpecialEffects(env, bitmap);
             LOGD("inverseWorldSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -598,7 +599,7 @@ Java_com_yaxiu_opencv_FaceDetection_mirrorSpecialEffects(JNIEnv *env, jobject th
             MatFun matfun = MatFun();
             matfun.mirrorSpecialEffects(env, bitmap);
             LOGD("mirrorSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -626,7 +627,7 @@ Java_com_yaxiu_opencv_FaceDetection_mosaicSpecialEffects(JNIEnv *env, jobject th
             MatFun matfun = MatFun();
             matfun.mosaicSpecialEffects(env, bitmap);
             LOGD("mosaicSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
         }, safeCallback);
@@ -651,7 +652,7 @@ Java_com_yaxiu_opencv_FaceDetection_reliefSpecialEffects(JNIEnv *env, jobject th
             MatFun matfun = MatFun();
             matfun.reliefSpecialEffects(env, bitmap);
             LOGD("reliefSpecialEffects success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithRelease(env, self, callback);
 
         });
 
@@ -681,7 +682,7 @@ Java_com_yaxiu_opencv_FaceDetection_faceMosaicSpecialEffects(JNIEnv *env, jobjec
                     MatFun matfun = MatFun();
                     matfun.faceMosaicSpecialEffects(env, (jstring) fileName, bitmap);
                     LOGD("faceMosaicSpecialEffects success");
-                    executeJavaOnMain(env, self, bitmap, callback);
+                    executeJavaOnMainWithRelease(env, self, callback);
 
                 });
 
@@ -706,9 +707,9 @@ Java_com_yaxiu_opencv_FaceDetection_clipSpecialEffects(JNIEnv *env, jobject thiz
     thread thread([](JniThreadFun *fun) {
         fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
             MatFun matfun = MatFun();
-            matfun.croppingBitmap(env, bitmap);
+            jobject newBitmap = matfun.croppingBitmap(env, bitmap);
             LOGD("croppingBitmap success");
-            executeJavaOnMain(env, self,bitmap, callback);
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
 
         });
 
@@ -746,11 +747,62 @@ Java_com_yaxiu_opencv_FaceDetection_moveMagnifierSpecialEffects(JNIEnv *env, job
 
             matfun.magnifierSpecialEffects(env,x_f,y_f ,bitmap);
             LOGD("moveMagnifierSpecialEffects success");
-            executeJavaOnMain(env,bitmap, callback);
+            executeJavaOnMain(env, callback);
 
         });
 
     }, globleSafeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_rotateImage(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject bitmapRotate = matfun.rotateImage(env, bitmap);
+            LOGD("rotateImage success");
+            executeJavaOnMainWithReleaseAndResult(env, self,bitmapRotate, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_matrixTransform(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                    jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            matfun.matrixTransform(env, bitmap);
+            LOGD("matrixTransform success");
+            executeJavaOnMainWithRelease(env, self,callback);
+
+        });
+
+    }, safeCallback);
 
     thread.detach();
     jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常

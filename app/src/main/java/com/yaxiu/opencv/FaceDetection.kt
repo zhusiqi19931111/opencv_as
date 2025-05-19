@@ -42,6 +42,8 @@ class FaceDetection {
     external fun mosaicSpecialEffects(bitmap: Bitmap, param: Runnable)
     external fun reliefSpecialEffects(bitmap: Bitmap, param: Runnable)
     external fun faceMosaicSpecialEffects(fileName: String, bitmap: Bitmap, param: Runnable)
-    external fun clipSpecialEffects(bitmap: Bitmap, param: Runnable)
+    external fun clipSpecialEffects(bitmap: Bitmap, param: CallbackInMainThread)
     external fun moveMagnifierSpecialEffects(x: Float, y: Float, bitmap: Bitmap, param: Runnable)
+    external fun rotateImage(bitmap: Bitmap, runnable: CallbackInMainThread)
+    external fun matrixTransform(bitmap: Bitmap, runnable: Runnable)
 }

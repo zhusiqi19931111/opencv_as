@@ -29,10 +29,10 @@
         tools:layout="@layout/fragment_q_q_effects" />
 
     <fragment
-        android:id="@+id/nav_2"
-        android:name="com.yaxiu.opencv.ui.mat.MatFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        android:id="@+id/nav_principle"
+        android:name="com.yaxiu.opencv.ui.principle.PrincipleFragment"
+        android:label="@string/principle"
+        tools:layout="@layout/fragment_principle" />
 
     <fragment
         android:id="@+id/nav_3"

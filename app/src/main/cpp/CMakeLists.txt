@@ -25,7 +25,10 @@ set_target_properties(opencv_java4 PROPERTIES IMPORTED_LOCATION
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
         native-lib.cpp
-        MatFun.cpp)
+        MatFun.cpp
+      //  DefineOpencvImpl.hpp
+       // Random.hpp
+        )
 
 
 target_link_libraries(${CMAKE_PROJECT_NAME}  opencv_java4

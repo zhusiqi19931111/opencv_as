@@ -11,7 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.graphics.createBitmap
 
 
-class Mat {
+class OperateBitmap {
     /**
      * 方式1 使用ColorMatrix 实现灰度图
      */
