@@ -17,7 +17,7 @@ MatFun::~MatFun() {
     LOGI("MatFun 执行析构函数");
 }
 
-void MatFun::matObj(JNIEnv *env, jstring path) {
+void MatFun::matObj(JNIEnv *env, jstring &path) {
 
     jobject bitmap = createBitmapByDecodeFile(env, path);
     Mat mat;
@@ -39,7 +39,7 @@ void MatFun::matObj(JNIEnv *env, jstring path) {
 
 }
 
-void MatFun::loadBitmapPixelEdit(JNIEnv *env, jobject bitmap) {
+void MatFun::loadBitmapPixelEdit(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     int result = bitmap2mat(env, mat, bitmap);
     if (result < 0) {
@@ -91,7 +91,7 @@ void MatFun::loadBitmapPixelEdit(JNIEnv *env, jobject bitmap) {
 
 }
 
-jobject MatFun::pixelEdit(JNIEnv *env, jstring path) {
+jobject MatFun::pixelEdit(JNIEnv *env, jstring &path) {
 
     //1.转成灰度图
     jobject bitmap = createBitmapByDecodeFile(env, path);
@@ -152,7 +152,7 @@ jobject MatFun::pixelEdit(JNIEnv *env, jstring path) {
 
 }
 
-jobject MatFun::imaAdd(JNIEnv *env, jstring path1, jstring path2) {
+jobject MatFun::imaAdd(JNIEnv *env, jstring &path1, jstring &path2) {
     //1.两张图片合成
     jobject bitmap1 = createBitmapByDecodeFile(env, path1);
     jobject bitmap2 = createBitmapByDecodeFile(env, path2);
@@ -226,7 +226,7 @@ jobject MatFun::imaAdd(JNIEnv *env, jstring path1, jstring path2) {
 
 }
 
-jobject MatFun::saturationBrightnessContrast(JNIEnv *env, jstring path) {
+jobject MatFun::saturationBrightnessContrast(JNIEnv *env, jstring &path) {
     jobject bitmap = createBitmapByDecodeFile(env, path);
     Mat mat;
     int result = bitmap2mat(env, mat, bitmap);
@@ -428,7 +428,7 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
 /**
  * 浮雕特效
  */
-void MatFun::reliefSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::reliefSpecialEffects(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     int status = bitmap2mat(env, mat, bitmap);
     if (status < 0) {
@@ -486,7 +486,7 @@ void MatFun::reliefSpecialEffects(JNIEnv *env, jobject bitmap) {
 /**
  * 马赛克特效
  */
-void MatFun::mosaicSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::mosaicSpecialEffects(JNIEnv *env, jobject &bitmap) {
 
     Mat mat;
     int status = bitmap2mat(env, mat, bitmap);
@@ -529,7 +529,7 @@ void MatFun::mosaicSpecialEffects(JNIEnv *env, jobject bitmap) {
 /**
  *面部马赛克
  */
-void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring filName, jobject bitmap) {
+void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring &filName, jobject &bitmap) {
     const char *path = env->GetStringUTFChars(filName, JNI_FALSE);
     bool result = cascadeClassifier.load(path);
     LOGE("加载分类器path%s", path);
@@ -542,7 +542,7 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring filName, jobject bitm
         cvtColor(src, src, COLOR_BGRA2GRAY);
         //直方图均衡化
         Mat hist;
-        equalizeHist(src, hist);
+        cv::equalizeHist(src, hist);
         /****
          *InputArray image,
           CV_OUT std::vector<Rect>& objects,
@@ -570,29 +570,29 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring filName, jobject bitm
             int cols_end = x + src_w;
             int blockSize = 5;
             LOGE("faceMosaicSpecialEffects x = %d y = %d width = %d height = %d",
-                 x, y, src_w,src_h);
+                 x, y, src_w, src_h);
             LOGE("faceMosaicSpecialEffects rows_start = %d rows_end = %d cols_start = %d cols_end = %d",
-                 rows_start, rows_end, cols_start,cols_end);
+                 rows_start, rows_end, cols_start, cols_end);
             //方式1
-           /* for (int row = rows_start; row < rows_end; row += blockSize) {
-                for (int col = cols_start; col < cols_end; col += blockSize) {
-                    // 计算当前 block 实际宽高，防止越界
-                    int blockWidth = min(blockSize, cols_end- col);
-                    int blockHeight = min(blockSize, rows_end - row);
+            /* for (int row = rows_start; row < rows_end; row += blockSize) {
+                 for (int col = cols_start; col < cols_end; col += blockSize) {
+                     // 计算当前 block 实际宽高，防止越界
+                     int blockWidth = min(blockSize, cols_end- col);
+                     int blockHeight = min(blockSize, rows_end - row);
 
-                    int pixel_c = hist.at<int>(row, col);
-                    for (int m_rows = 1; m_rows < blockWidth; ++m_rows) {
-                        for (int m_cols = 1; m_cols < blockHeight; ++m_cols) {
-                            hist.at<int>(row + m_rows, col + m_cols) = pixel_c;
-                        }
+                     int pixel_c = hist.at<int>(row, col);
+                     for (int m_rows = 1; m_rows < blockWidth; ++m_rows) {
+                         for (int m_cols = 1; m_cols < blockHeight; ++m_cols) {
+                             hist.at<int>(row + m_rows, col + m_cols) = pixel_c;
+                         }
 
-                    }
-                }
-            }*/
+                     }
+                 }
+             }*/
             //方式2
             RNG rng(time(NULL));
-            for (int row = rows_start; row < rows_end-blockSize; ++row) {
-                for (int col =cols_start; col < cols_end - blockSize; ++col) {
+            for (int row = rows_start; row < rows_end - blockSize; ++row) {
+                for (int col = cols_start; col < cols_end - blockSize; ++col) {
                     int random = rng.uniform(0, blockSize);
                     hist.at<int>(row, col) = hist.at<int>(row + random, col + random);
                 }
@@ -613,7 +613,7 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring filName, jobject bitm
 /**
  * 镜像特效
  */
-void MatFun::mirrorSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::mirrorSpecialEffects(JNIEnv *env, jobject &bitmap) {
 
     Mat mat;
     int status = bitmap2mat(env, mat, bitmap);
@@ -726,7 +726,7 @@ void MatFun::mirrorSpecialEffects(JNIEnv *env, jobject bitmap) {
 /**
  * 逆世界特效
  */
-void MatFun::inverseWorldSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::inverseWorldSpecialEffects(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     int status = bitmap2mat(env, mat, bitmap);
     if (status < 0) {
@@ -801,7 +801,7 @@ void MatFun::inverseWorldSpecialEffects(JNIEnv *env, jobject bitmap) {
 /**
  * 毛玻璃特效
  */
-void MatFun::glassSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::glassSpecialEffects(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
     // 高斯模糊，毛玻璃 （对某个区域取随机像素）
@@ -819,7 +819,7 @@ void MatFun::glassSpecialEffects(JNIEnv *env, jobject bitmap) {
     mat2bitmap(env, mat, bitmap);
 }
 
-void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject bitmap) {
+void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject &bitmap) {
     // 创建输出图像
     Mat mat;
     bitmap2mat(env, mat, bitmap);
@@ -931,14 +931,14 @@ void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject bitmap) {
      }
     mat2bitmap(env, res, bitmap);
  */
-void MatFun::oilPaintingSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::oilPaintingSpecialEffects(JNIEnv *env, jobject &bitmap) {
     oilPaintingSpecialEffects2(env, bitmap);
 }
 
 /**
  * bitmap 裁剪
  */
-jobject MatFun::croppingBitmap(JNIEnv *env, jobject bitmap) {
+jobject MatFun::croppingBitmap(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
     Mat resizeMat;
@@ -959,7 +959,7 @@ jobject MatFun::croppingBitmap(JNIEnv *env, jobject bitmap) {
  * @param env
  * @param bitmap
  */
-void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
     resize(mat, mat, Size(mat.cols >> 1, mat.rows >> 1));
@@ -1008,7 +1008,7 @@ void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject bitmap) {
     });
 
     Mat outMat;
-    remap(mat, outMat, mapx, mapy, INTER_LINEAR, BORDER_CONSTANT, Scalar(0, 0, 0));
+    cv::remap(mat, outMat, mapx, mapy, INTER_LINEAR, BORDER_CONSTANT, Scalar(0, 0, 0));
     //添加渐晕效果
     float vignetteStrength = 0.8f;
     Mat vignette = Mat::zeros(outMat.size(), CV_32F);
@@ -1086,7 +1086,7 @@ void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap, Mat &src, Mat 
     }
 
     // 应用重映射
-    remap(src, dst, map_x, map_y, INTER_LINEAR, BORDER_REPLICATE);
+    cv::remap(src, dst, map_x, map_y, INTER_LINEAR, BORDER_REPLICATE);
     LOGE("advancedMagnifierEffect remap");
     if (lensEffect) {
         // 添加透镜效果
@@ -1108,7 +1108,7 @@ void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap, Mat &src, Mat 
  * @param env
  * @param bitmap
  */
-void MatFun::magnifierSpecialEffects(JNIEnv *env, jobject bitmap) {
+void MatFun::magnifierSpecialEffects(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
 
@@ -1127,7 +1127,7 @@ void MatFun::magnifierSpecialEffects(JNIEnv *env, jobject bitmap) {
 }
 
 
-void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject bitmap) {
+void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject &bitmap) {
 
     Mat mat;
     bitmap2mat(env, mat, bitmap);
@@ -1137,8 +1137,8 @@ void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject bi
     float magnification = 2.0f;
     Mat dst;
 
-    int pointx=x;
-    int pointy=y;
+    int pointx = x;
+    int pointy = y;
 
     // 初始显示
     advancedMagnifierEffect(env, bitmap, mat, dst, Point(pointx, pointy), radius,
@@ -1148,7 +1148,7 @@ void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject bi
 }
 
 
-jobject MatFun::rotateImage(JNIEnv *env, jobject bitmap) {
+jobject MatFun::rotateImage(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
     int chanel = mat.channels();
@@ -1238,18 +1238,65 @@ jobject MatFun::rotateImage(JNIEnv *env, jobject bitmap) {
  * @param env
  * @param bitmap
  */
-void MatFun::matrixTransform(JNIEnv *env, jobject bitmap) {
+void MatFun::matrixTransform(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
-    Mat dst;
-    Mat M = Mat(2, 3, CV_32FC1); //2*3 矩阵
-    M.at<float>(0, 0) = 1;
-    M.at<float>(0, 1) = 2;
-    M.at<float>(0, 2) = 3;
 
-    M.at<float>(1, 0) = 3;
-    M.at<float>(1, 1) = 2;
-    M.at<float>(1, 2) = 1;
+    Mat M = Mat(2, 3, CV_32FC1); //2*3 矩阵
+
+    // 这几个值应该怎么确定？
+    // [a0,a1,a2]     两个矩阵      [a0,a1]    [a2]       =     [ x ]     *     [a0,a1]    +   [a2]    =   a0*x+a1*y + a2
+    // [b0,b1,b2]                  [b0,b1]    [b2]             [ y ]           [b0,b1]        [b2]    =   b0*x+b1*y + b2
+    //原图
+    M.at<float>(0, 0) = 1; //a0
+    M.at<float>(0, 1) = 0; //a1
+    M.at<float>(0, 2) = 0; //a2
+
+    M.at<float>(1, 0) = 0; //b0
+    M.at<float>(1, 1) = 1; //b1
+    M.at<float>(1, 2) = 0; //b2
+    Mat M1 = Mat(2, 3, CV_32FC1); //2*3 矩阵
+    //位移10个像素
+    M1.at<float>(0, 0) = 1; //a0
+    M1.at<float>(0, 1) = 0; //a1
+    M1.at<float>(0, 2) = 10; //a2
+
+    M1.at<float>(1, 0) = 0; //b0
+    M1.at<float>(1, 1) = 1; //b1
+    M1.at<float>(1, 2) = 10; //b2
+
+    Mat M2 = Mat(2, 3, CV_32FC1); //2*3 矩阵
+    //缩小0.5
+    M2.at<float>(0, 0) = 0.5; //a0
+    M2.at<float>(0, 1) = 0; //a1
+    M2.at<float>(0, 2) = 0; //a2
+
+    M2.at<float>(1, 0) = 0; //b0
+    M2.at<float>(1, 1) = 0.5; //b1
+    M2.at<float>(1, 2) = 0; //b2
+
+    Mat M3 = Mat(2, 3, CV_32FC1); //2*3 矩阵
+    //放大1.5
+    M3.at<float>(0, 0) = 1.5; //a0
+    M3.at<float>(0, 1) = 0; //a1
+    M3.at<float>(0, 2) = 0; //a2
+
+    M3.at<float>(1, 0) = 0; //b0
+    M3.at<float>(1, 1) = 1.5; //b1
+    M3.at<float>(1, 2) = 0; //b2
+
+    Mat M4 = Mat(2, 3, CV_32FC1); //2*3 矩阵
+    //y轴旋转0.8，x轴旋转0.5
+    M4.at<float>(0, 0) = 1; //a0
+    M4.at<float>(0, 1) = 0.8; //a1
+    M4.at<float>(0, 2) = 0; //a2
+
+    M4.at<float>(1, 0) = 0.5; //b0
+    M4.at<float>(1, 1) = 1; //b1
+    M4.at<float>(1, 2) = 0; //b2
+    Mat dst;
+    //方式一 仿射变换
+    //warpAffine(mat, dst,  M4, mat.size(), INTER_LINEAR);
     //系统 仿射变换
     //原理如下：
     /*旋转 (线性变换)
@@ -1263,18 +1310,196 @@ void MatFun::matrixTransform(JNIEnv *env, jobject bitmap) {
      */
     // 设置源点
     srcTri[0] = Point2f(0, 0);
-    srcTri[1] = Point2f(1, 0);
-    srcTri[2] = Point2f(0, 1);
+    srcTri[1] = Point2f(100, 0);
+    srcTri[2] = Point2f(0, 100);
 
-    // 设置目标点
-    dstTri[0] = Point2f(0, 0);
-    dstTri[1] = Point2f(1, 0.5);  // 添加倾斜
-    dstTri[2] = Point2f(0, 1);  // 添加倾斜
+    int random = Random().random_start_end(0, 3);
+    LOGE("matrixTransform random=%d", random);
+    if (random == 0) {
+        //平移向右 100 像素，向下 50 像素 .每个点都加上 (100, 50)，表示向右下平移。
+        dstTri[0] = Point2f(100, 50);
+        dstTri[1] = Point2f(200, 50);
+        dstTri[2] = Point2f(100, 150);
+        LOGE("平移向右 100 像素，向下 50 像素d");
+    } else if (random == 1) {
 
-    // 计算仿射变换矩阵
-    Mat warpMat = getAffineTransform(srcTri, dstTri);
+        //以某点为中心，进行逆时针旋转 θ 度（OpenCV 默认角度是逆时针）。绕原点旋转 90 度（逆时针）
+        dstTri[0] = Point2f(50, 50);
+        dstTri[1] = Point2f(0, 100);
+        dstTri[2] = Point2f(-100, 0);
+        LOGE("绕原点旋转 90 度（逆时针");
+    } else if (random == 2) {
+        //以原点为中心，放大 2 倍，就是每个点乘了 2
+        dstTri[0] = Point2f(0, 0);
+        dstTri[1] = Point2f(200, 0);
+        dstTri[2] = Point2f(0, 200);
+        LOGE("以原点为中心，放大 2 倍");
+    } else if (random == 3) {
+        //剪切是在保持某一方向不变的情况下，斜着拉伸图像。：X 方向剪切，shear_x = 0.5
+        dstTri[0] = Point2f(0, 0);
+        dstTri[1] = Point2f(100, 0);
+        dstTri[2] = Point2f(50, 100);
+        LOGE("X 方向剪切，shear_x = 0.5");
+    }
 
-    cout << "M" << M << "warp_mat:" << warpMat << endl;
-    warpAffine(mat, dst, warpMat, mat.size(), INTER_LINEAR);
+    //方式二 仿射变换
+    //Mat warpMat = getAffineTransform(srcTri, dstTri);
+    //方式三
+    Point2f center = Point2f(mat.cols >> 1, mat.rows >> 1);
+    double angle = 90;
+    double scale = 1;
+    Mat warpMat = getRotationMatrix2D(center, angle, scale);
+    warpAffine(mat, dst, M2, mat.size(), INTER_LINEAR);
     mat2bitmap(env, dst, bitmap);
+}
+
+jobject MatFun::reSize(JNIEnv *env, jobject &bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    int random = Random().random_start_end(0, 1);
+    Mat dst;
+    Size dstsize;
+    if (random == 0) {
+        LOGE("scale = 2f");
+        //方式1放大
+        dstsize = Size(mat.cols * 2, mat.rows * 2);
+        // pyrUp(mat, dst, dstsize);
+    } else {
+        LOGE("scale = 0.5f");
+        //方式1缩小
+        dstsize = Size(mat.cols / 2, mat.rows / 2);
+        // pyrDown(mat, dst, dstsize);
+    }
+    //方式2 仿拉普拉斯金字塔 实现上采样降采样
+    ImageProc().pyrUpOrDown(mat, dst, dstsize);
+    jobject newBitmap = createBitmap(env, dst.cols, dst.rows, dst.type());
+    LOGE("reSize src cols=%d rows=%d dst cols=%d rows=%d", mat.cols, mat.rows, dst.cols, dst.rows);
+    mat2bitmap(env, dst, newBitmap);
+    return newBitmap;
+}
+
+
+void MatFun::remap(JNIEnv *env, jobject &bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    Mat dst;
+    //方式1
+    //注意CV_32FC1 与 at<float> 对应 ,系统cv::remap只能使用 CV_32FC1
+/*    Mat mat_x(mat.size(), CV_32FC1);
+    Mat mat_y(mat.size(), CV_32FC1);
+    for (int row = 0; row < mat.rows; ++row) {
+        for (int col = 0; col < mat.cols; ++col) {
+            mat_x.at<float>(row, col) = mat.cols - col;
+            mat_y.at<float>(row, col) = mat.rows - row;
+        }
+    }
+
+
+    cv::remap(mat, dst, mat_x, mat_y, InterpolationFlags::INTER_LINEAR);*/
+    //方式2 自定义remap
+    Mat mat_x(mat.size(), mat.type());
+    Mat mat_y(mat.size(), mat.type());
+    for (int row = 0; row < mat.rows; ++row) {
+        for (int col = 0; col < mat.cols; ++col) {
+            mat_x.at<int>(row, col) = mat.cols - col;
+            mat_y.at<int>(row, col) = mat.rows - row;
+        }
+    }
+    ImageProc().dRemap(mat, dst, mat_x, mat_y);
+    mat2bitmap(env, dst, bitmap);
+}
+
+void MatFun::equalizeHist(JNIEnv *env, jobject &bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    //1.灰度化
+    cvtColor(mat,mat,COLOR_BGR2GRAY);
+    Mat hist;
+    //方式1 系统的
+    //cv::equalizeHist(mat,hist);
+    //方式2 自定义的
+    ImageProc().equalizeHist(mat,hist);
+    mat2bitmap(env, hist, bitmap);
+
+}
+
+
+jobject MatFun::calcuHist(JNIEnv *env, jobject &bitmap) {
+    ImageProc imageProc = ImageProc();
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    //1.灰度化，直方图计算只能处理单通道图片
+    Mat gray;
+    cvtColor(mat, gray, COLOR_BGRA2GRAY);
+    Mat hist;
+    //计算直方图
+    imageProc.calcHist(gray, hist);
+    //归一化
+    Mat normalize;
+    int max_v = 255;
+    imageProc.normalize(hist, normalize, max_v);
+    //绘制计算之后的直方图
+//  画直方图
+    int bin_w = 5;
+    int grad = 256;
+    Mat hist_result = Mat(grad, grad * bin_w, CV_8UC3);
+    for (int i = 0; i < grad; ++i) {
+        //InputOutputArray img, Point pt1, Point pt2, const Scalar& color
+        Point pointStart(i * bin_w, hist_result.rows);//rows 代表y
+        Point pointEnd(i * bin_w, hist_result.rows - normalize.at<int>(0, i));
+        line(hist_result, pointStart, pointEnd, Scalar(0, 255, 255), 1, LineTypes::LINE_AA);
+    }
+
+    jobject newBitmap = createBitmap(env, hist_result.cols, hist_result.rows, hist_result.type());
+    mat2bitmap(env, hist_result, newBitmap);
+    return newBitmap;
+
+}
+
+void MatFun::matLight(JNIEnv *env, jobject &bitmap) {
+    Mat mat;
+    bitmap2mat(env, mat, bitmap);
+    Mat dst(mat.size(), mat.type());
+    //方式1高亮
+    int chananls = mat.channels();
+    if (chananls == 4) {
+        for (int row = 0; row < mat.rows; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                dst.at<Vec4b>(row, col)[0] = saturate_cast<uchar>(mat.at<Vec4b>(row, col)[0] + 20);
+                dst.at<Vec4b>(row, col)[1] = saturate_cast<uchar>(mat.at<Vec4b>(row, col)[1] + 20);
+                dst.at<Vec4b>(row, col)[2] = saturate_cast<uchar>(mat.at<Vec4b>(row, col)[2] + 20);
+                dst.at<Vec4b>(row, col)[3] = saturate_cast<uchar>(mat.at<Vec4b>(row, col)[3] + 20);
+
+
+            }
+        }
+    } else if (chananls == 3) {
+        for (int row = 0; row < mat.rows; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                dst.at<Vec3b>(row, col)[0] = saturate_cast<uchar>(mat.at<Vec3b>(row, col)[0] + 20);
+                dst.at<Vec3b>(row, col)[1] = saturate_cast<uchar>(mat.at<Vec3b>(row, col)[1] + 20);
+                dst.at<Vec3b>(row, col)[2] = saturate_cast<uchar>(mat.at<Vec3b>(row, col)[2] + 20);
+
+
+            }
+        }
+    } else {
+        for (int row = 0; row < mat.rows; ++row) {
+            for (int col = 0; col < mat.cols; ++col) {
+                dst.at<uchar>(row, col) = saturate_cast<uchar>(mat.at<uchar>(row, col) + 20);
+
+            }
+        }
+    }
+    // mat2bitmap(env, dst, bitmap);
+    //方式2高亮
+    Mat hsv;
+    cvtColor(mat, hsv, COLOR_BGR2HSV);
+    vector<Mat> hsvMats;
+    split(hsv, hsvMats);
+    cv::equalizeHist(hsvMats[2], hsvMats[2]); //直方图均衡
+    Mat mergeMat;
+    cv::merge(hsvMats, hsv);
+    cvtColor(hsv, mat, COLOR_HSV2BGR);//hsv 图必须转成原图BGR ,否则显示异常
+    mat2bitmap(env, mat, bitmap);
 }

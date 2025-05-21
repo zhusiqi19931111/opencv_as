@@ -4,6 +4,7 @@
 
 #ifndef OPENCV_MATFUN_H
 #define OPENCV_MATFUN_H
+
 #include <string>
 #include <jni.h>
 #include <cmath>
@@ -14,6 +15,8 @@
 #include <opencv2/opencv.hpp>
 #include <android/bitmap.h>
 #include "Random.hpp"
+#include "ImageProc.h"
+
 using namespace cv;
 using namespace std;
 
@@ -22,57 +25,70 @@ public:
     CascadeClassifier cascadeClassifier;
 public:
     MatFun();
-    MatFun(const MatFun& mat);
+
+    MatFun(const MatFun &mat);
+
     ~MatFun();
+
 public:
     jobject createBitmap(JNIEnv *env, jint width, jint height, int type);
-    jobject createBitmapByDecodeFile(JNIEnv *env,jstring path);
+
+    jobject createBitmapByDecodeFile(JNIEnv *env, jstring path);
 
     int bitmap2mat(JNIEnv *env, Mat &mat, jobject &bitmap);
 
     int mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap);
 
-    void matObj(JNIEnv *env,jstring path);
+    void matObj(JNIEnv *env, jstring &path);
 
-    void loadBitmapPixelEdit(JNIEnv *env, jobject bitmap);
+    void loadBitmapPixelEdit(JNIEnv *env, jobject &bitmap);
 
-    jobject pixelEdit(JNIEnv *env,jstring path);
+    jobject pixelEdit(JNIEnv *env, jstring &path);
 
-    jobject imaAdd(JNIEnv *env,jstring path1, jstring path2);
+    jobject imaAdd(JNIEnv *env, jstring &path1, jstring &path2);
 
-    jobject saturationBrightnessContrast(JNIEnv *env,jstring path);
+    jobject saturationBrightnessContrast(JNIEnv *env, jstring &path);
 
-    void reliefSpecialEffects(JNIEnv *env, jobject bitmap);
+    void reliefSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void mosaicSpecialEffects(JNIEnv *env, jobject bitmap);
+    void mosaicSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void faceMosaicSpecialEffects(JNIEnv *env,jstring filName, jobject bitmap);
+    void faceMosaicSpecialEffects(JNIEnv *env, jstring &filName, jobject &bitmap);
 
-    void mirrorSpecialEffects(JNIEnv *env, jobject bitmap);
+    void mirrorSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void inverseWorldSpecialEffects(JNIEnv *env, jobject bitmap);
+    void inverseWorldSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void glassSpecialEffects(JNIEnv *env, jobject bitmap);
+    void glassSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void oilPaintingSpecialEffects(JNIEnv *env, jobject bitmap);
+    void oilPaintingSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void oilPaintingSpecialEffects2(JNIEnv *env, jobject bitmap);
+    void oilPaintingSpecialEffects2(JNIEnv *env, jobject &bitmap);
 
-    jobject croppingBitmap(JNIEnv *env, jobject bitmap);
+    jobject croppingBitmap(JNIEnv *env, jobject &bitmap);
 
-    void fishEyeSpecialEffects(JNIEnv *env, jobject bitmap);
+    void fishEyeSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void magnifierSpecialEffects(JNIEnv *env, jobject bitmap);
+    void magnifierSpecialEffects(JNIEnv *env, jobject &bitmap);
 
-    void magnifierSpecialEffects(JNIEnv *env,jfloat x, jfloat y, jobject bitmap);
+    void magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject &bitmap);
 
-    void advancedMagnifierEffect(JNIEnv *env, jobject bitmap,Mat& src, Mat& dst, Point center, int radius, float magnification,
-                                         bool lensEffect, bool fishEye);
-    friend void* getMouseCallbackUserData();
+    void advancedMagnifierEffect(JNIEnv *env, jobject bitmap, Mat &src, Mat &dst, Point center,
+                                 int radius, float magnification,
+                                 bool lensEffect, bool fishEye);
 
-    jobject rotateImage(JNIEnv *env, jobject bitmap);
+    friend void *getMouseCallbackUserData();
 
-    void matrixTransform(JNIEnv *env, jobject bitmap);
+    jobject rotateImage(JNIEnv *env, jobject &bitmap);
+
+    void matrixTransform(JNIEnv *env, jobject &bitmap);
+
+    jobject reSize(JNIEnv *pEnv, jobject &bitmap);
+
+    void remap(JNIEnv *env, jobject &bitmap);
+    void equalizeHist(JNIEnv *env, jobject &bitmap);
+    jobject calcuHist(JNIEnv *env, jobject &bitmap);
+    void matLight(JNIEnv *env, jobject &bitmap);
 };
 
 

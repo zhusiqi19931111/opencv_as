@@ -6,43 +6,60 @@ class Mat : AutoCloseable {
 
     var cols: Int = 0
     var rows: Int = 0
-    private var jniMatAds: Long = 0;
+    var type = CVType.CV_32FC1
+    var jniMatAds: Long = 0;
+
 
     constructor() {
-        jniMatAds = nCrateMat()
+        jniMatAds = FaceDetection.instance.nCrateMat()
 
     }
 
-    constructor(rows: Int, cols: Int, type: Int) {
+    constructor(rows: Int, cols: Int, type: CVType) {
         this.rows = rows
         this.cols = cols
-        jniMatAds = nCrateMatIII(rows, cols, type)
-
+        this.type = type
+        jniMatAds = FaceDetection.instance.nCrateMatIII(rows, cols, type.value)
+        println("Mat rows:$rows cols:$cols type:$type")
     }
 
     fun bitmap2mat(bitmap: Bitmap) {
         if (jniMatAds != 0L) {
-            nBitmap2mat(jniMatAds, bitmap)
-        }else{
-            println("jniMatAds 未初始化")
+            FaceDetection.instance.nBitmap2mat(jniMatAds, bitmap)
+        } else {
+            println("Mat 未初始化")
         }
 
     }
 
+    fun  at(i0: Int, i1: Int, value: Float) {
+        if(type != CVType.CV_32FC1){
+            throw  UnsupportedOperationException("Provider value nonsupport, please check CVType.");
+        }
+        if (jniMatAds != 0L) {
+            FaceDetection.instance.nat(jniMatAds, i0, i1, value)
+        } else {
+            println("Mat 未初始化")
+        }
+
+    }
+
+    fun warpAffine(dst: Long, m: Long, bitmap: Bitmap) {
+        if (jniMatAds != 0L) {
+            FaceDetection.instance.nWarpAffine(jniMatAds, dst, m,bitmap)
+        } else {
+            println("Mat 未初始化")
+        }
+    }
 
     override fun close() {
         if (jniMatAds != 0L) {
-            nReleaseMat(jniMatAds)
+            FaceDetection.instance.nReleaseMat(jniMatAds)
             jniMatAds = 0L
+            println("Mat 释放指针")
         }
     }
 
-    private external fun nReleaseMat(jniMatAds: Long)
 
-    private external fun nCrateMatIII(rows: Int, cols: Int, type: Int): Long
-
-    private external fun nCrateMat(): Long
-
-    private external fun nBitmap2mat(jniMatAds: Long, bitmap: Bitmap)
 
 }

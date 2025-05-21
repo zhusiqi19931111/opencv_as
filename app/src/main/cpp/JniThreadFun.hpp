@@ -16,7 +16,7 @@ using namespace std;
 class JniThreadFun {
 private:
     JavaVM *m_vm;
-    mutex m_mutex;
+    shared_ptr<mutex> m_mutex = make_shared<mutex>();//用智能指针共享,即使对象销毁，mutex 也不会立即释放，避免线程崩溃。
     jobject params;
     jobject callback;
 
@@ -94,7 +94,7 @@ JNIEnv *JniThreadFun::getEnv() {
 void JniThreadFun::run_task(
         void(*execute)(JNIEnv *env, JniThreadFun *self, jobject &params, jobject callback)) {
 
-    lock_guard<mutex> lock(m_mutex);  // 自动加锁解锁
+    lock_guard<mutex> lock(*m_mutex);  // 自动加锁解锁
     LOGE("JniThreadFun run_task");
     // 临界区代码
     JNIEnv *env = getEnv();
@@ -209,7 +209,7 @@ void executeJavaOnMainWithResult(JNIEnv *env, jobject &bitmap, jobject callback)
 void JniThreadFun::run_task_globle(
         void(*execute)(JNIEnv *env, jobject &params, jobject callback)) {
 
-    lock_guard<mutex> lock(m_mutex);  // 自动加锁解锁
+    lock_guard<mutex> lock(*m_mutex);  // 自动加锁解锁
     LOGE("JniThreadFun run_task");
     // 临界区代码
     JNIEnv *env = getEnv();

@@ -680,7 +680,7 @@ Java_com_yaxiu_opencv_FaceDetection_faceMosaicSpecialEffects(JNIEnv *env, jobjec
         fun->run_task(
                 [](JNIEnv *env, JniThreadFun *self, jobject &bitmap, jobject callback) -> void {
                     MatFun matfun = MatFun();
-                    matfun.faceMosaicSpecialEffects(env, (jstring) fileName, bitmap);
+                    matfun.faceMosaicSpecialEffects(env,reinterpret_cast<jstring &>(fileName), bitmap);
                     LOGD("faceMosaicSpecialEffects success");
                     executeJavaOnMainWithRelease(env, self, callback);
 
@@ -798,7 +798,190 @@ Java_com_yaxiu_opencv_FaceDetection_matrixTransform(JNIEnv *env, jobject thiz, j
             MatFun matfun = MatFun();
             matfun.matrixTransform(env, bitmap);
             LOGD("matrixTransform success");
-            executeJavaOnMainWithRelease(env, self,callback);
+            executeJavaOnMainWithRelease(env,self,callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_reSize(JNIEnv *env, jobject thiz, jobject bitmap,
+                                           jobject runnable) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, runnable);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.reSize(env, bitmap);
+            LOGD("reSize success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_remap(JNIEnv *env, jobject thiz, jobject bitmap,
+                                          jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            matfun.remap(env, bitmap);
+            LOGD("remap success");
+            executeJavaOnMainWithRelease(env,self,callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_yaxiu_opencv_FaceDetection_nCrateMatIII(JNIEnv *env, jobject thiz, jint rows, jint cols, jint type) {
+    Mat *m = new Mat(rows, cols, type);
+    LOGD("DefineOpencvImpl nCrateMatIII");
+    return reinterpret_cast<jlong>(m);
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_yaxiu_opencv_FaceDetection_nCrateMat(JNIEnv *env, jobject thiz) {
+    Mat *m = new Mat();
+    LOGD("DefineOpencvImpl nCrateMatIII");
+    return reinterpret_cast<jlong>(m);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_nReleaseMat(JNIEnv *env, jobject thiz, jlong jni_mat_ads) {
+    Mat *mat = reinterpret_cast<Mat *>(jni_mat_ads);
+    delete mat;
+    mat= nullptr;
+    LOGD("DefineOpencvImpl delete mat");
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_nBitmap2mat(JNIEnv *env, jobject thiz, jlong jni_mat_ads,
+                                                jobject bitmap) {
+    Mat *mat = reinterpret_cast<Mat *>(jni_mat_ads);
+    MatFun f = MatFun(); //注意是否需要初始化构造函数
+    f.bitmap2mat(env, *mat, bitmap);
+    LOGD("DefineOpencvImpl nBitmap2mat");
+
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_nat(JNIEnv *env, jobject thiz, jlong jni_mat_ads, jint i0, jint i1,
+                                        jfloat value) {
+    Mat *mat = reinterpret_cast<Mat *>(jni_mat_ads);
+    mat->at<float>(i0,i1)=value;
+    LOGD("DefineOpencvImpl nat");
+
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_nWarpAffine(JNIEnv *env, jobject thiz, jlong jni_mat_ads, jlong dst_mat_ads,
+                                                jlong m_mat_ads, jobject bitmap) {
+    Mat *mat = reinterpret_cast<Mat *>(jni_mat_ads);
+    Mat *dst = reinterpret_cast<Mat *>(dst_mat_ads);
+    Mat *m = reinterpret_cast<Mat *>(m_mat_ads);
+    warpAffine(*mat, *dst, *m, mat->size(), INTER_LINEAR);
+    MatFun().mat2bitmap(env, *dst, bitmap);
+    float value=m->at<float>(0,0);
+    LOGD("DefineOpencvImpl src cols=%d rows=%d dst cols=%d rows=%d nWarpAffine m=%f", mat->cols, mat->rows,mat->cols, mat->rows,value);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_equalizeHist(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                 jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            matfun.equalizeHist(env, bitmap);
+            LOGD("equalizeHist success");
+            executeJavaOnMainWithRelease(env,self,callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_calcuHist(JNIEnv *env, jobject thiz, jobject bitmap,
+                                              jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.calcuHist(env, bitmap);
+            LOGD("calcuHist success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_matLight(JNIEnv *env, jobject thiz, jobject bitmap,
+                                             jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            matfun.matLight(env, bitmap);
+            LOGD("matLight success");
+            executeJavaOnMainWithRelease(env,self,callback);
 
         });
 

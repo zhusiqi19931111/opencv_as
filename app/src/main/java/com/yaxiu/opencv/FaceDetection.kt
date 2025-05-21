@@ -24,13 +24,17 @@ class FaceDetection {
 
     @Throws(FileNotFoundException::class)
     external fun createBitmapByDecodeFile(path: String): Bitmap
+
     @Throws(FileNotFoundException::class)
     external fun matObj()
+
     @Throws(FileNotFoundException::class)
-    external fun opencvEditPiexl(path: String):Bitmap
+    external fun opencvEditPiexl(path: String): Bitmap
     external fun loadBitmapEditPiexl(bitmap: Bitmap, callback: Runnable)
+
     @Throws(FileNotFoundException::class)
     external fun opencvAddWeight(s: String, s1: String): Bitmap
+
     @Throws(FileNotFoundException::class)
     external fun opencvSaturationBrightnessContrast(s: String): Bitmap
     external fun magnifierSpecialEffects(bitmap: Bitmap, param: Runnable)
@@ -46,4 +50,19 @@ class FaceDetection {
     external fun moveMagnifierSpecialEffects(x: Float, y: Float, bitmap: Bitmap, param: Runnable)
     external fun rotateImage(bitmap: Bitmap, runnable: CallbackInMainThread)
     external fun matrixTransform(bitmap: Bitmap, runnable: Runnable)
+    external fun reSize(bitmap: Bitmap, runnable: CallbackInMainThread)
+    external fun remap(bitmap: Bitmap, runnable: Runnable)
+
+
+    external fun nReleaseMat(jniMatAds: Long)
+    external fun nCrateMatIII(rows: Int, cols: Int, type: Int): Long
+    external fun nCrateMat(): Long
+    external fun nBitmap2mat(jniMatAds: Long, bitmap: Bitmap)
+    external fun nat(jniMatAds: Long, i0: Int, i1: Int, value: Float)
+    external fun nWarpAffine(jniMatAds: Long, dstMatAds: Long, mMatAds: Long, bitmap: Bitmap)
+
+
+    external fun equalizeHist(bitmap: Bitmap, runnable: Runnable)
+    external fun calcuHist(bitmap: Bitmap, runnable: CallbackInMainThread)
+    external fun matLight(bitmap: Bitmap, runnable: Runnable)
 }
