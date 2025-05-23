@@ -9,6 +9,14 @@
 
     <Button
         android:layout_width="match_parent"
+        android:layout_marginTop="10dp"
+        android:text="检测权限"
+        android:id="@+id/btn_check_permission"
+        android:layout_marginBottom="10dp"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"

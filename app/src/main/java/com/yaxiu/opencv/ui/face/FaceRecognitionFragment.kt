@@ -18,15 +18,16 @@ import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import com.yaxiu.opencv.FaceDetection
 import com.yaxiu.opencv.R
 import com.yaxiu.opencv.databinding.FragmentFaceBinding
+import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.concurrent.Executors
 
 class FaceRecognitionFragment : Fragment(), View.OnClickListener {
 
@@ -41,27 +42,23 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    val threadPool = Executors.newSingleThreadExecutor()
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
+
 
         _binding = FragmentFaceBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
 
-        if (checkStoragePermission()) {
-            requestStoragePermission()
-        } else {
-            copyCascadeFile()
-
-        }
         faceBitmap = BitmapFactory.decodeResource(resources, R.drawable.face);
         binding.faceImage.setImageBitmap(faceBitmap)
         binding.btnRecognition.setOnClickListener(this)
+        binding.btnCheckPermission.setOnClickListener(this)
         return root
     }
 
@@ -121,7 +118,10 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
         println("$TAG mCascadeFile.exists:${mCascadeFile.exists()} mCascadeFile.absolutePath:${mCascadeFile.absolutePath}")
         if (mCascadeFile.exists()) {
             opencvUpdateMat()
-            FaceDetection.instance.loadCascade(mCascadeFile.absolutePath)
+            runSubThread {
+
+                FaceDetection.instance.loadCascade(mCascadeFile.absolutePath)
+            }
             return
         }
         var inputStream: InputStream? = null
@@ -136,9 +136,9 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
             while ((inputStream.read(buffer).also { bytesRead = it }) != -1) {
                 outputStream.write(buffer, 0, bytesRead)
             }
-
-            FaceDetection.instance.loadCascade(mCascadeFile.absolutePath)
-
+            runSubThread {
+                FaceDetection.instance.loadCascade(mCascadeFile.absolutePath)
+            }
             opencvUpdateMat()
 
         } catch (e: IOException) {
@@ -151,10 +151,13 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     }
 
     private fun opencvUpdateMat() {
-
-        FaceDetection.instance.opencvUpdateMat("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250425172853.jpg","/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/out_20250425172853.jpg")
+        runSubThread {
+            FaceDetection.instance.opencvUpdateMat(
+                "/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250425172853.jpg",
+                "/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/out_20250425172853.jpg"
+            )
+        }
     }
-
 
 
     // 检查权限
@@ -193,12 +196,34 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
         }
     }
 
-    override fun onClick(v: View?) {
+    override fun onClick(v: View) {
         // 识别人脸，保存人脸特征信息
-        FaceDetection.instance.faceDetectionSaveInfo(faceBitmap)
-        binding.faceImage.setImageBitmap(faceBitmap)
-    }
+        when (v.id) {
+            R.id.btn_recognition -> {
+                runSubThread {
+                    FaceDetection.instance.faceDetectionSaveInfo(faceBitmap)
+                    Thread.sleep(3_000)//临时用途，建议采用回调
+                    requireActivity().runOnUiThread({
+                        binding.faceImage.setImageBitmap(faceBitmap)
+                    })
 
+                }
+
+            }
+
+            R.id.btn_check_permission -> {
+
+                if (checkStoragePermission()) {
+                    requestStoragePermission()
+                } else {
+                    copyCascadeFile()
+
+                }
+            }
+
+        }
+
+    }
 
 
     @Deprecated("Deprecated in Java")
@@ -222,7 +247,11 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
         }
     }
 
-
+    fun runSubThread(callback: () -> Unit) {
+        threadPool.execute {
+            callback.invoke()
+        }
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()

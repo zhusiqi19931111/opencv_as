@@ -89,7 +89,7 @@ void ImageProc::normalize(const Mat &src, Mat &dst, int max_v) {
 // 2. 计算直方图中像素的概率  计算规则：1.像素/width*height 2. 概率累加
 // 3. 生成一张映射表
 // 4. 从映射表中查找赋值
-void ImageProc::equalizeHist(const Mat & src, Mat &dst) {
+void ImageProc::equalizeHist(const Mat &src, Mat &dst) {
     Mat hist;
     // 1. 直方图的统计
     calcHist(src, hist);
@@ -100,25 +100,25 @@ void ImageProc::equalizeHist(const Mat & src, Mat &dst) {
     float size = src.rows * src.cols;
     float prob_sum = 0.0;
     for (int col = 0; col < hist.cols; ++col) {
-        int times  = hist.at<int>(0, col);
+        int times = hist.at<int>(0, col);
         prob_sum += times / size;
         probMat.at<float>(0, col) = prob_sum;
 
     }
     // 3. 生成一张映射表
     Mat map;
-    map.create(probMat.size(),CV_32FC1);
+    map.create(probMat.size(), CV_32FC1);
     for (int col = 0; col < probMat.cols; ++col) {
         float prob = probMat.at<float>(0, col);
-        map.at<float>(0,col) =col* prob;
+        map.at<float>(0, col) = 255 * prob; //特别注意255 不能使用col
 
     }
     // 4. 从映射表中查找赋值
-    dst.create(src.size(),src.type());
+    dst.create(src.size(), src.type());
     for (int row = 0; row < src.rows; ++row) {
         for (int col = 0; col < src.cols; ++col) {
-            uchar pixels = src.at<uchar>(row,col);
-            dst.at<uchar>(row,col)=map.at<float>(0,pixels);
+            uchar pixels = src.at<uchar>(row, col);
+            dst.at<uchar>(row, col) = map.at<float>(0, pixels);
         }
     }
 

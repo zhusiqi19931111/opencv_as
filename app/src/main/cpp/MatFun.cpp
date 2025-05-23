@@ -539,10 +539,11 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring &filName, jobject &bi
         Mat src;
         bitmap2mat(env, src, bitmap);
         //2.mat 灰度化
-        cvtColor(src, src, COLOR_BGRA2GRAY);
+        Mat gray;
+        cvtColor(src, gray, COLOR_BGRA2GRAY);
         //直方图均衡化
         Mat hist;
-        cv::equalizeHist(src, hist);
+        cv::equalizeHist(gray, hist);
         /****
          *InputArray image,
           CV_OUT std::vector<Rect>& objects,
@@ -557,7 +558,7 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring &filName, jobject &bi
             //x, y,width,height
             Rect faceRect = faces[0];//面部所在的位置
             // 在人脸部分花个图
-            rectangle(hist, faceRect, Scalar(255, 0, 0), 8);
+            // rectangle(src, faceRect, Scalar(255, 0, 0), 8);
             int x = faceRect.x;
             int y = faceRect.y;
 
@@ -568,37 +569,45 @@ void MatFun::faceMosaicSpecialEffects(JNIEnv *env, jstring &filName, jobject &bi
             int rows_end = y + src_h;
             int cols_start = x;
             int cols_end = x + src_w;
-            int blockSize = 5;
+            int blockSize = 10;
             LOGE("faceMosaicSpecialEffects x = %d y = %d width = %d height = %d",
                  x, y, src_w, src_h);
             LOGE("faceMosaicSpecialEffects rows_start = %d rows_end = %d cols_start = %d cols_end = %d",
                  rows_start, rows_end, cols_start, cols_end);
             //方式1
-            /* for (int row = rows_start; row < rows_end; row += blockSize) {
-                 for (int col = cols_start; col < cols_end; col += blockSize) {
-                     // 计算当前 block 实际宽高，防止越界
-                     int blockWidth = min(blockSize, cols_end- col);
-                     int blockHeight = min(blockSize, rows_end - row);
+            for (int row = rows_start; row < rows_end; row += blockSize) {
+                for (int col = cols_start; col < cols_end; col += blockSize) {
+                    // 计算当前 block 实际宽高，防止越界
+                    //方式1
+                    /* int blockWidth = min(blockSize, cols_end- col);
+                      int blockHeight = min(blockSize, rows_end - row);
+                      int pixel_c = src.at<int>(row, col);//todo 特别注意马赛克必须在原图上取值绘制，不能在直方图上
+                      for (int m_rows = 1; m_rows < blockWidth; ++m_rows) {
+                          for (int m_cols = 1; m_cols < blockHeight; ++m_cols) {
+                              src.at<int>(row + m_rows, col + m_cols) = pixel_c;
+                          }
 
-                     int pixel_c = hist.at<int>(row, col);
-                     for (int m_rows = 1; m_rows < blockWidth; ++m_rows) {
-                         for (int m_cols = 1; m_cols < blockHeight; ++m_cols) {
-                             hist.at<int>(row + m_rows, col + m_cols) = pixel_c;
-                         }
+                      }*/
+                    // 优化方式2：获取块内的平均颜色
+                    Rect blockRect(col, row, blockSize, blockSize);
+                    Mat block = src(blockRect);
+                    Scalar avgColor = mean(block);
 
-                     }
-                 }
-             }*/
-            //方式2
-            RNG rng(time(NULL));
-            for (int row = rows_start; row < rows_end - blockSize; ++row) {
-                for (int col = cols_start; col < cols_end - blockSize; ++col) {
-                    int random = rng.uniform(0, blockSize);
-                    hist.at<int>(row, col) = hist.at<int>(row + random, col + random);
+                    // 将整个块区域设置为平均颜色
+                    rectangle(src, blockRect, avgColor, FILLED);
                 }
-
             }
-            mat2bitmap(env, hist, bitmap);
+            //方式2
+            /* RNG rng(time(NULL));
+             for (int row = rows_start; row < rows_end - blockSize; ++row) {
+                 for (int col = cols_start; col < cols_end - blockSize; ++col) {
+                     int random = rng.uniform(0, blockSize);
+                     src.at<int>(row, col) = src.at<int>(row + random, col + random);
+
+                 }
+
+             }*/
+            mat2bitmap(env, src, bitmap);
         }
 
 
@@ -823,11 +832,12 @@ void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject &bitmap) {
     // 创建输出图像
     Mat mat;
     bitmap2mat(env, mat, bitmap);
-    resize(mat, mat, Size(), 0.5, 0.5);
 
-    int brushSize = 10;
-    int coarseness = 2;
+    // 不进行图像缩放，保持原始图像尺寸
+    // resize(mat, mat, Size(), 0.5, 0.5);
 
+    int brushSize = 15;  // 增加笔触大小
+    int coarseness = 1;  // 减少颜色量化次数
 
     // 创建临时图像
     Mat temp;
@@ -866,9 +876,22 @@ void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject &bitmap) {
     // 3. 边缘增强
     Mat edges;
     Canny(mat, edges, 50, 150);
-    cvtColor(edges, edges, COLOR_GRAY2BGR);
-    //  temp = temp - edges * 0.3; // 减弱边缘
-    //subtract(temp, edges* 0.3, temp);
+    // 方式1：确保 edges 是单通道图像
+//    if (edges.channels() != 1) {
+//        cvtColor(edges, edges, COLOR_BGR2GRAY);  // 如果不是单通道，转换为灰度图
+//    }
+//    //这个错误提示表明在调用 subtract(temp, edges * 0.3, temp) 时，temp 和 edges 图像的尺寸或通道数不匹配，导致无法进行逐像素的减法运算。为了避免这个错误，我们需要确保两个输入图像 temp 和 edges 的大小和通道数相同。
+//    // 必须将将 edges 转换为三通道图像，否则subtract 会报以上错误
+//    Mat edgesBGR;
+//
+//    cvtColor(edges, edgesBGR, COLOR_GRAY2BGR);  // 将单通道转换为三通道
+    //方式二： 将 edges 扩展为三通道
+    Mat edgesBGR;
+    Mat temp_edges = edges.clone();  // 复制一份边缘图
+    cv::merge(std::vector<Mat>{temp_edges, temp_edges, temp_edges}, edgesBGR);  // 将单通道扩展为三通道
+
+   // 边缘增强：减去边缘图像的影响
+    //subtract(temp, edgesBGR * 0.3, temp);  // 使用三通道的 edgesBGR 进行减法
 
 
     // 4. 纹理增强
@@ -876,8 +899,7 @@ void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject &bitmap) {
     Mat kernel = (Mat_<float>(3, 3) << 1, 1, 1, 1, -8, 1, 1, 1, 1);
     filter2D(temp, texture, CV_32F, kernel);
     texture.convertTo(texture, CV_8U);
-    add(temp, texture * 0.1, temp); // 添加轻微纹理
-
+    add(temp, texture * 0.5, temp); // 使用三通道的 edgesBGR 进行减法 增加纹理增强的强度
 
     mat2bitmap(env, temp, bitmap);
 }
@@ -962,7 +984,9 @@ jobject MatFun::croppingBitmap(JNIEnv *env, jobject &bitmap) {
 void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
-    resize(mat, mat, Size(mat.cols >> 1, mat.rows >> 1));
+
+    // 不进行缩放，保持原始图像尺寸
+    // resize(mat, mat, Size(mat.cols >> 1, mat.rows >> 1));
 
     // 应用鱼眼效果
     float intensity = 0.7f; // 变形强度 (0.0-1.0)
@@ -1009,8 +1033,9 @@ void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject &bitmap) {
 
     Mat outMat;
     cv::remap(mat, outMat, mapx, mapy, INTER_LINEAR, BORDER_CONSTANT, Scalar(0, 0, 0));
-    //添加渐晕效果
-    float vignetteStrength = 0.8f;
+
+    // 添加渐晕效果
+    float vignetteStrength = 0.0f;  // 暂时禁用渐晕
     Mat vignette = Mat::zeros(outMat.size(), CV_32F);
     Point center(mat.cols / 2, outMat.rows / 2);
     float radius = min(center.x, center.y) * 0.9f;
@@ -1028,7 +1053,8 @@ void MatFun::fishEyeSpecialEffects(JNIEnv *env, jobject &bitmap) {
             }
         }
     }
-    mat2bitmap(env, outMat, bitmap);
+
+    mat2bitmap(env, outMat, bitmap);  // 更新 bitmap
 }
 
 void *getMouseCallbackUserData() {
@@ -1037,9 +1063,9 @@ void *getMouseCallbackUserData() {
     return userData;
 }
 
-void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap, Mat &src, Mat &dst, Point center,
-                                     int radius, float magnification,
-                                     bool lensEffect = true, bool fishEye = true) {
+void advancedMagnifierEffectMy(JNIEnv *env, jobject bitmap, Mat &src, Mat &dst, Point center,
+                               int radius, float magnification,
+                               bool lensEffect = true, bool fishEye = true) {
     src.copyTo(dst);
 
     // 参数检查
@@ -1145,6 +1171,76 @@ void MatFun::magnifierSpecialEffects(JNIEnv *env, jfloat x, jfloat y, jobject &b
                             magnification,
                             true, false);
     mat2bitmap(env, dst, bitmap);
+}
+
+void MatFun::advancedMagnifierEffect(JNIEnv *env, jobject bitmap, Mat &src, Mat &dst, Point center,
+                                     int radius, float magnification, bool lensEffect = true,
+                                     bool fishEye = true) {
+
+    // 参数检查
+    if (radius <= 0 || magnification <= 1.0f) return;
+
+    LOGE("advancedMagnifierEffect start lensEffect:%b fishEye:%b", lensEffect, fishEye);
+
+    // 确保中心在图像范围内
+    center.x = max(radius, min(src.cols - radius, center.x));
+    center.y = max(radius, min(src.rows - radius, center.y));
+    LOGE("Updated center: x=%d, y=%d", center.x, center.y);
+
+    // 创建放大区域蒙版
+    Mat mask = Mat::zeros(src.size(), CV_8UC1);
+    circle(mask, center, radius, Scalar(255), -1);
+
+    // 创建映射矩阵
+    Mat map_x(src.size(), CV_32FC1);
+    Mat map_y(src.size(), CV_32FC1);
+
+    for (int y = 0; y < src.rows; y++) {
+        for (int x = 0; x < src.cols; x++) {
+            // 计算到中心的距离
+            float dx = x - center.x;
+            float dy = y - center.y;
+            float distance = sqrt(dx * dx + dy * dy);
+
+            if (distance <= radius) {
+                if (fishEye) {
+                    // 鱼眼变形效果
+                    float r = distance / radius;
+                    float theta = atan2(dy, dx);
+                    float newR = pow(r, 0.8f) * radius;
+
+                    map_x.at<float>(y, x) = center.x + newR * cos(theta);
+                    map_y.at<float>(y, x) = center.y + newR * sin(theta);
+                } else {
+                    // 简单放大
+                    map_x.at<float>(y, x) = center.x + (x - center.x) / magnification;
+                    map_y.at<float>(y, x) = center.y + (y - center.y) / magnification;
+                }
+            } else {
+                map_x.at<float>(y, x) = x;
+                map_y.at<float>(y, x) = y;
+            }
+        }
+    }
+
+    // 应用重映射
+    cv::remap(src, dst, map_x, map_y, INTER_LINEAR, BORDER_REPLICATE);
+    LOGE("advancedMagnifierEffect remap");
+
+    if (lensEffect) {
+        // 添加透镜效果
+        Mat lensEffect = Mat::zeros(src.size(), src.type());
+        circle(lensEffect, center, radius, Scalar(255, 255, 255), -1);
+        GaussianBlur(lensEffect, lensEffect, Size(25, 25), 0);
+        addWeighted(dst, 1.0, lensEffect, 0.1, 0, dst);
+
+        // 添加边框
+        circle(dst, center, radius, Scalar(255, 255, 255), 3);
+        circle(dst, center, radius - 2, Scalar(0, 0, 0), 1);
+        LOGE("advancedMagnifierEffect circle");
+    }
+
+
 }
 
 
@@ -1413,12 +1509,12 @@ void MatFun::equalizeHist(JNIEnv *env, jobject &bitmap) {
     Mat mat;
     bitmap2mat(env, mat, bitmap);
     //1.灰度化
-    cvtColor(mat,mat,COLOR_BGR2GRAY);
+    cvtColor(mat, mat, COLOR_BGR2GRAY);
     Mat hist;
     //方式1 系统的
     //cv::equalizeHist(mat,hist);
     //方式2 自定义的
-    ImageProc().equalizeHist(mat,hist);
+    ImageProc().equalizeHist(mat, hist);
     mat2bitmap(env, hist, bitmap);
 
 }
