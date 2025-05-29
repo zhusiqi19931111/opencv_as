@@ -1106,9 +1106,9 @@ Java_com_yaxiu_opencv_FaceDetection_hog(JNIEnv *env, jobject thiz, jobject bitma
     thread thread([](JniThreadFun *fun) {
         fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
             MatFun matfun = MatFun();
-            matfun.hog(env, bitmap);
+            jobject newBitmap = matfun.hog(env, bitmap);
             LOGD("hog success");
-            executeJavaOnMainWithRelease(env,self,callback);
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
 
         });
 

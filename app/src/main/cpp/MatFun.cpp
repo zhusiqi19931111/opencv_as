@@ -385,8 +385,8 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
     }
     // 检查 Bitmap 格式
     CV_Assert(bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
-              bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565||
-                      bitmap_info.format == ANDROID_BITMAP_FORMAT_A_8);
+              bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565 ||
+              bitmap_info.format == ANDROID_BITMAP_FORMAT_A_8);
     int lockPixelsRes = AndroidBitmap_lockPixels(env, bitmap, &pixelPtr);
     if (lockPixelsRes < 0) {
         return lockPixelsRes;
@@ -891,7 +891,7 @@ void MatFun::oilPaintingSpecialEffects2(JNIEnv *env, jobject &bitmap) {
     Mat temp_edges = edges.clone();  // 复制一份边缘图
     cv::merge(std::vector<Mat>{temp_edges, temp_edges, temp_edges}, edgesBGR);  // 将单通道扩展为三通道
 
-   // 边缘增强：减去边缘图像的影响
+    // 边缘增强：减去边缘图像的影响
     //subtract(temp, edgesBGR * 0.3, temp);  // 使用三通道的 edgesBGR 进行减法
 
 
@@ -1607,141 +1607,48 @@ void MatFun::matLight(JNIEnv *env, jobject &bitmap) {
  * @param bitmap
  * @return
  */
-jobject MatFun::codeVerification(JNIEnv *env, jobject &bitmap){
+jobject MatFun::codeVerification(JNIEnv *env, jobject &bitmap) {
     Mat src;
     bitmap2mat(env, src, bitmap);
     //1.图片转灰度化
-    cvtColor(src,src,COLOR_BGR2GRAY);
+    cvtColor(src, src, COLOR_BGR2GRAY);
     //2.图片二值化，自动阈值
-    threshold(src,src,0,255,ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
+    threshold(src, src, 0, 255, ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
     //3.查找轮廓
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
-    findContours(src,contours,hierarchy,RetrievalModes::RETR_LIST ,ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+    findContours(src, contours, hierarchy, RetrievalModes::RETR_LIST,
+                 ContourApproximationModes::CHAIN_APPROX_SIMPLE);
     vector<Rect> codeMats;
 
-    ImageProc imageProc=  ImageProc();
+    ImageProc imageProc = ImageProc();
 
-    for (int i = 0; i <contours.size(); ++i) {
+    for (int i = 0; i < contours.size(); ++i) {
         //4.轮廓的筛选，传统二维码轮廓的大小>49 ,宽高比>0.8
         // 过滤面积，
-        vector<Point> points= contours[i];
+        vector<Point> points = contours[i];
         double area = contourArea(points);
 
-        if (area < 49){
+        if (area < 49) {
             continue;
         }
-        RotatedRect rotateRect= minAreaRect(points);
+        RotatedRect rotateRect = minAreaRect(points);
         //高度
-        float height= rotateRect.size.height;
+        float height = rotateRect.size.height;
         //宽度
-        float width= rotateRect.size.width;
+        float width = rotateRect.size.width;
 
-        float radio =min(height,width)/max(height,width);
+        float radio = min(height, width) / max(height, width);
 
-        if(radio>0.8&& width< src.cols/2 && height< src.rows/2){
-           // 去分析，找到满足宽高比的，满足宽高大小的
+        if (radio > 0.8 && width < src.cols / 2 && height < src.rows / 2) {
+            // 去分析，找到满足宽高比的，满足宽高大小的
             Mat qrROI = imageProc.warpTransfrom(src, rotateRect);
-            LOGE("codeVerification qrROI  width=%d height=%d ",qrROI.cols,qrROI.rows);
+            LOGE("codeVerification qrROI  width=%d height=%d ", qrROI.cols, qrROI.rows);
             //5.对比二维码特征黑白比例7:3:1
             if (imageProc.isYCorner(qrROI) && imageProc.isXCorner(qrROI)) {
                 drawContours(src, contours, i, Scalar(0, 0, 255), 4);
-                Rect bounding=boundingRect(points);
+                Rect bounding = boundingRect(points);
                 codeMats.push_back(bounding);
-
-            }
-           // char* name;
-           // sprintf(name,"rectangle_%d.jpg",i);
-          //  LOGE("codeVerification name=%s", name);
-
-        }
-    }
-
-    LOGE("codeVerification final  codeMats size=%d ",codeMats.size());
-     if(codeMats.size()>=3){
-         Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats), imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
-         // 校正 Rect，确保不会越界
-         roi_rect.x = max(0, roi_rect.x);
-         roi_rect.y = max(0, roi_rect.y);
-         roi_rect.width = min(roi_rect.width, src.cols - roi_rect.x);
-         roi_rect.height =min(roi_rect.height, src.rows - roi_rect.y);
-
-        // 再进行裁剪
-         Mat mergeCode=src(roi_rect);
-         cvtColor(mergeCode,mergeCode,COLOR_GRAY2BGR);
-         //6.二维码剪切
-         jobject newBitmap=createBitmap(env,mergeCode.cols,mergeCode.rows,mergeCode.type());
-         mat2bitmap(env, mergeCode, newBitmap);
-         LOGE("codeVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x,roi_rect.y,roi_rect.width,roi_rect.height);
-         //7.二维码显示
-         return newBitmap;
-     }
-    mat2bitmap(env, src, bitmap);
-    return bitmap;
-}
-
-
-jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap){
-    Mat src;
-    bitmap2mat(env, src, bitmap);
-
-    ImageProc imageProc =  ImageProc();
-
-    //1.图片转灰度化
-    cvtColor(src,src,COLOR_BGR2GRAY);
-    cv::equalizeHist(src, src);
-    // 降噪
-    GaussianBlur(src, src, Size(3, 3), 0);
-    //2.图片二值化，自动阈值
-    threshold(src,src,0,255,ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
-    Mat dst(src);
-    float angle=90.0f;
-    bool isCorrection=false;
-    LOGE("codeTiltVerification src  type=%d channels=%d cols=%d rows=%d dst type=%d channels=%d cols=%d rows=%d ",src.type(),src.channels(),src.cols,src.rows,dst.type(),dst.channels(),dst.cols,dst.rows);
-    //3.查找二维码轮廓
-    vector<vector<Point> > contours;
-    vector<Vec4i> hierarchy;
-
-    findContours(dst,contours,hierarchy,RetrievalModes::RETR_LIST ,ContourApproximationModes::CHAIN_APPROX_SIMPLE);
-    vector<Rect> codeMats;
-
-    for (int i = 0; i <contours.size(); ++i) {
-        //4.轮廓的筛选，传统二维码轮廓的大小>49 ,宽高比>0.8
-        // 过滤面积，
-        vector<Point> points= contours[i];
-        double area = contourArea(points);
-
-        if (area < 49){
-            continue;
-        }
-        RotatedRect rotateRect= minAreaRect(points);
-        //高度
-        float height= rotateRect.size.height;
-        //宽度
-        float width= rotateRect.size.width;
-
-        float radio =min(height,width)/max(height,width);
-
-        if(radio>0.8&& width< dst.cols/2 && height< dst.rows/2){
-            // 去分析，找到满足宽高比的，满足宽高大小的
-            Mat qrROI = imageProc.warpTransfrom(dst, rotateRect);
-            LOGE("codeTiltVerification qrROI  width=%d height=%d ",qrROI.cols,qrROI.rows);
-            //5.对比二维码特征黑白比例7:3:1
-            if (imageProc.isYCorner(qrROI) && imageProc.isXCorner(qrROI)) {
-                angle=rotateRect.angle;
-                if(angle!=90.0f&&!isCorrection){
-                    isCorrection=true;
-                    i = 0;
-                    imageProc.correctionMat(dst,dst,angle);
-                    contours.clear();
-                    findContours(dst,contours,hierarchy,RetrievalModes::RETR_LIST ,ContourApproximationModes::CHAIN_APPROX_SIMPLE);
-                    LOGE("codeTiltVerification reset continue angle=%f",angle);
-                    continue;
-                }
-                drawContours(dst, contours, i, Scalar(0, 0, 255), 4);
-                Rect bounding=boundingRect(points);
-                codeMats.push_back(bounding);
-                LOGE("codeTiltVerification push_back i=%d bounding x=%d y=%d width=%d height=%d ",i,bounding.x,bounding.y,bounding.width,bounding.height);
 
             }
             // char* name;
@@ -1751,9 +1658,111 @@ jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap){
         }
     }
 
-    LOGE("codeTiltVerification final  codeMats size=%d angle=%f",codeMats.size(),angle);
-    if(codeMats.size()>=3){
-        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats), imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
+    LOGE("codeVerification final  codeMats size=%d ", codeMats.size());
+    if (codeMats.size() >= 3) {
+        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats),
+                      imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
+        // 校正 Rect，确保不会越界
+        roi_rect.x = max(0, roi_rect.x);
+        roi_rect.y = max(0, roi_rect.y);
+        roi_rect.width = min(roi_rect.width, src.cols - roi_rect.x);
+        roi_rect.height = min(roi_rect.height, src.rows - roi_rect.y);
+
+        // 再进行裁剪
+        Mat mergeCode = src(roi_rect);
+        cvtColor(mergeCode, mergeCode, COLOR_GRAY2BGR);
+        //6.二维码剪切
+        jobject newBitmap = createBitmap(env, mergeCode.cols, mergeCode.rows, mergeCode.type());
+        mat2bitmap(env, mergeCode, newBitmap);
+        LOGE("codeVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x, roi_rect.y,
+             roi_rect.width, roi_rect.height);
+        //7.二维码显示
+        return newBitmap;
+    }
+    mat2bitmap(env, src, bitmap);
+    return bitmap;
+}
+
+
+jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap) {
+    Mat src;
+    bitmap2mat(env, src, bitmap);
+
+    ImageProc imageProc = ImageProc();
+
+    //1.图片转灰度化
+    cvtColor(src, src, COLOR_BGR2GRAY);
+    cv::equalizeHist(src, src);
+    // 降噪
+    GaussianBlur(src, src, Size(3, 3), 0);
+    //2.图片二值化，自动阈值
+    threshold(src, src, 0, 255, ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
+    Mat dst(src);
+    float angle = 90.0f;
+    bool isCorrection = false;
+    LOGE("codeTiltVerification src  type=%d channels=%d cols=%d rows=%d dst type=%d channels=%d cols=%d rows=%d ",
+         src.type(), src.channels(), src.cols, src.rows, dst.type(), dst.channels(), dst.cols,
+         dst.rows);
+    //3.查找二维码轮廓
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+
+    findContours(dst, contours, hierarchy, RetrievalModes::RETR_LIST,
+                 ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+    vector<Rect> codeMats;
+
+    for (int i = 0; i < contours.size(); ++i) {
+        //4.轮廓的筛选，传统二维码轮廓的大小>49 ,宽高比>0.8
+        // 过滤面积，
+        vector<Point> points = contours[i];
+        double area = contourArea(points);
+
+        if (area < 49) {
+            continue;
+        }
+        RotatedRect rotateRect = minAreaRect(points);
+        //高度
+        float height = rotateRect.size.height;
+        //宽度
+        float width = rotateRect.size.width;
+
+        float radio = min(height, width) / max(height, width);
+
+        if (radio > 0.8 && width < dst.cols / 2 && height < dst.rows / 2) {
+            // 去分析，找到满足宽高比的，满足宽高大小的
+            Mat qrROI = imageProc.warpTransfrom(dst, rotateRect);
+            LOGE("codeTiltVerification qrROI  width=%d height=%d ", qrROI.cols, qrROI.rows);
+            //5.对比二维码特征黑白比例7:3:1
+            if (imageProc.isYCorner(qrROI) && imageProc.isXCorner(qrROI)) {
+                angle = rotateRect.angle;
+                if (angle != 90.0f && !isCorrection) {
+                    isCorrection = true;
+                    i = 0;
+                    imageProc.correctionMat(dst, dst, angle);
+                    contours.clear();
+                    findContours(dst, contours, hierarchy, RetrievalModes::RETR_LIST,
+                                 ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+                    LOGE("codeTiltVerification reset continue angle=%f", angle);
+                    continue;
+                }
+                drawContours(dst, contours, i, Scalar(0, 0, 255), 4);
+                Rect bounding = boundingRect(points);
+                codeMats.push_back(bounding);
+                LOGE("codeTiltVerification push_back i=%d bounding x=%d y=%d width=%d height=%d ",
+                     i, bounding.x, bounding.y, bounding.width, bounding.height);
+
+            }
+            // char* name;
+            // sprintf(name,"rectangle_%d.jpg",i);
+            //  LOGE("codeVerification name=%s", name);
+
+        }
+    }
+
+    LOGE("codeTiltVerification final  codeMats size=%d angle=%f", codeMats.size(), angle);
+    if (codeMats.size() >= 3) {
+        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats),
+                      imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
         // 校正 Rect，确保不会越界
         roi_rect.x = max(0, roi_rect.x);
         roi_rect.y = max(0, roi_rect.y);
@@ -1761,13 +1770,14 @@ jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap){
         roi_rect.height = min(roi_rect.height, dst.rows - roi_rect.y);
 
         // 再进行裁剪
-        Mat mergeCode=dst(roi_rect);
-        cvtColor(mergeCode,mergeCode,COLOR_GRAY2BGR);
+        Mat mergeCode = dst(roi_rect);
+        cvtColor(mergeCode, mergeCode, COLOR_GRAY2BGR);
         //6.二维码剪切
-        jobject newBitmap=createBitmap(env,mergeCode.cols,mergeCode.rows,mergeCode.type());
+        jobject newBitmap = createBitmap(env, mergeCode.cols, mergeCode.rows, mergeCode.type());
         mat2bitmap(env, mergeCode, newBitmap);
-       // imageProc.restoreMat(mergeCode,mergeCode,angle);
-        LOGE("codeTiltVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x,roi_rect.y,roi_rect.width,roi_rect.height);
+        // imageProc.restoreMat(mergeCode,mergeCode,angle);
+        LOGE("codeTiltVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x, roi_rect.y,
+             roi_rect.width, roi_rect.height);
         //7.二维码显示
         return newBitmap;
     }
@@ -1775,6 +1785,7 @@ jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap){
     mat2bitmap(env, src, bitmap);
     return bitmap;
 }
+
 /**
  * 三种解决方案：
     1. 再写一套识别圆形特征的代码
@@ -1789,33 +1800,33 @@ jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap){
     4. 截取二维码区域
     5. 识别二维码
  */
-jobject MatFun::codeRoundVerification(JNIEnv *env, jobject &bitmap){
-    ImageProc imageProc=  ImageProc();
+jobject MatFun::codeRoundVerification(JNIEnv *env, jobject &bitmap) {
+    ImageProc imageProc = ImageProc();
 
     Mat src;
-    bitmap2mat(env, src,bitmap);
+    bitmap2mat(env, src, bitmap);
     vector<Rect> codeMats;
     // 对图像进行灰度转换
     Mat gray;
     cvtColor(src, gray, COLOR_BGR2GRAY);
-   //方式一 二值化
+    //方式一 二值化
     threshold(gray, gray, 0, 255, THRESH_BINARY | THRESH_OTSU);
 
-   /**
-     * 方式二
-     * todo 特别注意二维码图像是彩色的，背景和前景对比不强，并且颜色变化细腻，直接灰度 + Otsu 会导致重要的颜色细节丢失，二维码圆点被清除或连接不清晰。使用 adaptiveThreshold + 色彩通道分离（保留色彩特征）
-     * todo我们可以将图像转换为 HSV 或 LAB 色彩空间，并选择其中的亮度/色度通道进行自适应二值化。
-     *  Mat hsv, vChannel;
-        cvtColor(src, hsv, COLOR_BGR2HSV);
-        vector<Mat> hsv_channels;
-        split(hsv, hsv_channels); // HSV 通道分离
-        vChannel = hsv_channels[2]; // 亮度通道
-        // 使用自适应阈值，适应局部颜色变化
-        adaptiveThreshold(vChannel, vChannel, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 31, 5);
-        // 可选：形态学操作增强圆形结构（闭运算填补间隙）
-        Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
-        morphologyEx(vChannel, gray, MORPH_CLOSE, kernel);
-   */
+    /**
+      * 方式二
+      * todo 特别注意二维码图像是彩色的，背景和前景对比不强，并且颜色变化细腻，直接灰度 + Otsu 会导致重要的颜色细节丢失，二维码圆点被清除或连接不清晰。使用 adaptiveThreshold + 色彩通道分离（保留色彩特征）
+      * todo我们可以将图像转换为 HSV 或 LAB 色彩空间，并选择其中的亮度/色度通道进行自适应二值化。
+      *  Mat hsv, vChannel;
+         cvtColor(src, hsv, COLOR_BGR2HSV);
+         vector<Mat> hsv_channels;
+         split(hsv, hsv_channels); // HSV 通道分离
+         vChannel = hsv_channels[2]; // 亮度通道
+         // 使用自适应阈值，适应局部颜色变化
+         adaptiveThreshold(vChannel, vChannel, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 31, 5);
+         // 可选：形态学操作增强圆形结构（闭运算填补间隙）
+         Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
+         morphologyEx(vChannel, gray, MORPH_CLOSE, kernel);
+    */
 
     // 1. 对其进行轮廓查找
     vector<Vec4i> hierarchy;
@@ -1838,7 +1849,8 @@ jobject MatFun::codeRoundVerification(JNIEnv *env, jobject &bitmap){
             CV_CHAIN_APPROX_TC89_L1，CV_CHAIN_APPROX_TC89_KCOS 使用teh-Chinl chain 近似算法
         offset表示代表轮廓点的偏移量，可以设置为任意值。对ROI图像中找出的轮廓，并要在整个图像中进行分析时，这个参数还是很有用的。
      */
-    findContours(gray, contours, hierarchy, RetrievalModes::RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0));
+    findContours(gray, contours, hierarchy, RetrievalModes::RETR_TREE, CHAIN_APPROX_NONE,
+                 Point(0, 0));
     int tCC = 0; // 临时用来累加的子轮廓计数器
     int pId = -1;// 父轮廓的 index
     for (int i = 0; i < contours.size(); i++) {
@@ -1865,23 +1877,26 @@ jobject MatFun::codeRoundVerification(JNIEnv *env, jobject &bitmap){
     for (int i = 0; i < contoursRes.size(); ++i) {
         drawContours(src, contoursRes, i, Scalar(255, 0, 0), 2);
     }
-    LOGE("codeRoundVerification contoursRes.size=%d codeMats.size=%d",contoursRes.size(), codeMats.size());
+    LOGE("codeRoundVerification contoursRes.size=%d codeMats.size=%d", contoursRes.size(),
+         codeMats.size());
     // 裁剪二维码，交给 zxing 或者 zbar 处理即可
-    if(codeMats.size()>=3){
-        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats), imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
+    if (codeMats.size() >= 3) {
+        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats),
+                      imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
         // 校正 Rect，确保不会越界
         roi_rect.x = max(0, roi_rect.x);
         roi_rect.y = max(0, roi_rect.y);
         roi_rect.width = min(roi_rect.width, src.cols - roi_rect.x);
-        roi_rect.height =min(roi_rect.height, src.rows - roi_rect.y);
+        roi_rect.height = min(roi_rect.height, src.rows - roi_rect.y);
 
         // 再进行裁剪
-        Mat mergeCode=src(roi_rect);
-        cvtColor(mergeCode,mergeCode,COLOR_GRAY2BGR);
+        Mat mergeCode = src(roi_rect);
+        cvtColor(mergeCode, mergeCode, COLOR_GRAY2BGR);
         //6.二维码剪切
-        jobject newBitmap=createBitmap(env,mergeCode.cols,mergeCode.rows,mergeCode.type());
+        jobject newBitmap = createBitmap(env, mergeCode.cols, mergeCode.rows, mergeCode.type());
         mat2bitmap(env, mergeCode, newBitmap);
-        LOGE("codeRoundVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x,roi_rect.y,roi_rect.width,roi_rect.height);
+        LOGE("codeRoundVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x, roi_rect.y,
+             roi_rect.width, roi_rect.height);
         //7.二维码显示
         return newBitmap;
     }
@@ -1892,20 +1907,295 @@ jobject MatFun::codeRoundVerification(JNIEnv *env, jobject &bitmap){
     return bitmap;
 }
 
-void MatFun::hog(JNIEnv *env, jobject &bitmap){
+/**
+ * HOGDescriptor 原理详解
+HOG（Histogram of Oriented Gradients，方向梯度直方图）是一种在计算机视觉和图像处理中用于物体检测的特征描述方法。HOGDescriptor 是 OpenCV 中实现这一算法的类。
+
+一、HOG 基本概念
+HOG 特征的核心思想是：局部物体的外观和形状可以被梯度或边缘方向的分布很好地描述。它通过计算和统计图像局部区域的梯度方向直方图来构成特征。
+
+二、HOG 算法步骤
+1. 图像预处理
+    灰度化：将彩色图像转换为灰度图像
+    Gamma 校正：对图像进行归一化处理，减少光照影响
+    math
+    I(x,y) = I(x,y)^{gamma}
+    通常 gamma 取 1/2
+
+2. 计算梯度
+    对于每个像素点，计算其在 x 和 y 方向的梯度：
+    math
+    G_x(x,y) = I(x+1,y) - I(x-1,y)
+    G_y(x,y) = I(x,y+1) - I(x,y-1)
+    然后计算梯度的幅值和方向：
+    math
+    G(x,y) = \sqrt{G_x(x,y)^2 + G_y(x,y)^2}
+    θ(x,y) = \arctan\left(\frac{G_y(x,y)}{G_x(x,y)}\right)
+3. 划分细胞单元(Cell)
+   将图像划分为小的空间区域，称为细胞单元（Cell）。通常每个 Cell 大小为 8×8 像素。
+
+4. 计算细胞单元的梯度方向直方图
+   将 0-180°（无符号梯度）或 0-360°（有符号梯度）划分为若干个 bins（通常 9 个 bins，每 20° 一个 bin）
+   根据像素的梯度方向，将其幅值加权投影到对应的方向 bin 中
+
+5. 块(Block)归一化
+    将多个细胞单元组合成块（Block），通常为 2×2 个 Cell（16×16 像素）
+    对 Block 内的所有 Cell 的直方图进行串联，然后进行归一化处理
+    常用的归一化方法有：L2-norm、L1-norm、L1-sqrt 等
+
+6. 生成 HOG 特征向量
+   将所有 Block 的特征向量串联起来，形成最终的 HOG 特征描述符。
+
+三、OpenCV 中的 HOGDescriptor
+    OpenCV 中的 HOGDescriptor 类实现了上述算法，主要参数包括：
+    cv::HOGDescriptor hog(
+        Size winSize,           // 检测窗口大小
+        Size blockSize,         // 块大小
+        Size blockStride,       // 块滑动步长
+        Size cellSize,         // 细胞单元大小
+        int nbins,             // 直方图的bin数量
+        int derivAperture = 1, // 梯度计算的sobel算子孔径
+        double winSigma = -1,  // 高斯平滑窗口参数
+        int histogramNormType = HOGDescriptor::L2Hys, // 归一化类型
+        double L2HysThreshold = 0.2, // L2-norm归一化后截断阈值
+        bool gammaCorrection = true, // 是否进行gamma校正
+        int nlevels = 64       // 检测窗口放大倍数
+    );
+四、HOG 特征的应用
+    行人检测：HOG + SVM 是经典的 pedestrian detection 方法
+    物体识别：可作为通用特征用于各种物体识别任务
+    图像分类：作为图像的一种特征表示
+
+五、HOG 的优缺点
+优点：
+    对几何和光学变化有很好的不变性
+    局部单元格操作使其对部分遮挡不敏感
+    特征维度相对较低，计算效率较高
+
+缺点：
+    对方向变化敏感
+    需要固定大小的输入窗口
+    在复杂背景下检测效果可能下降
+ * @param env
+ * @param bitmap
+ */
+jobject MatFun::hog(JNIEnv *env, jobject &bitmap) {
+    Mat src;
+    bitmap2mat(env, src, bitmap);
+//    resize(src, src, Size(64, 128));
+//    Mat gray;
+//    cvtColor(src, gray, COLOR_BGR2GRAY);
+//    HOGDescriptor hog;
+    /**
+     *  特征向量维度计算
+        HOG 特征向量的维度可以通过以下方式计算：
+        对于检测窗口大小为 winSize，块大小为 blockSize，块步长为 blockStride，细胞大小为 cellSize，bin 数为 nbins：
+        每个 block 包含 (blockSize.width/cellSize.width) × (blockSize.height/cellSize.height) 个 cell
+        每个 block 的特征维度为 (blockSize.width/cellSize.width) × (blockSize.height/cellSize.height) × nbins
+        窗口中的 block 数量为 ((winSize.width-blockSize.width)/blockStride.width + 1) × ((winSize.height-blockSize.height)/blockStride.height + 1)
+        总维度 = 每个 block 的维度 × block 数量
+     */
+//    vector<float> descriptors;
+//    vector<Point> locations;
+    /**
+     *  img：输入图像（可以是单通道或多通道，但通常使用灰度图像）
+        descriptors：输出的 HOG 特征向量
+        winStride：窗口移动步长（默认等于 blockStride）
+        padding：填充大小（用于处理边界）
+        locations：指定要计算 HOG 特征的位置集合（如果为空，则计算整个图像的密集特征）
+     */
+//    hog.compute(gray, descriptors, Size(), Size(), locations);
+//    LOGE("HOG descriptor size:%d", descriptors.size());//3780
+    /**
+     * detectMultiScale 是 OpenCV 中 HOGDescriptor 类用于多尺度物体检测的核心方法，特别在行人检测中广泛应用。下面我将全面解析这个方法的工作原理、参数和使用技巧。
+
+        一、方法原型
+        void HOGDescriptor::detectMultiScale(
+            InputArray img,
+            std::vector<Rect>& foundLocations,
+            double hitThreshold = 0,
+            Size winStride = Size(),
+            Size padding = Size(),
+            double scale = 1.05,
+            double finalThreshold = 2.0,
+            bool useMeanshiftGrouping = false
+        ) const;
+        二、参数详解
+            参数	类型	说明
+            img	InputArray	输入图像（通常为灰度图像）
+            foundLocations	vector<Rect>&	输出检测到的目标边界框
+            hitThreshold	double	分类器判定阈值（通常设为0，使用默认SVM的rho值）
+            winStride	Size	检测窗口移动步长（默认等于blockStride）
+            padding	Size	图像边缘填充（处理边界效应）
+            scale	double	图像金字塔缩放因子（>1.0）
+            finalThreshold	double	非极大值抑制阈值
+            useMeanshiftGrouping	bool	是否使用meanshift方法合并检测结果
+        三、工作原理
+            图像金字塔构建：
+            通过不断缩放原始图像（缩放因子为scale）构建图像金字塔
+            在每个尺度上使用固定大小的窗口进行检测
+            滑动窗口检测：
+            在每个金字塔层级上，窗口以winStride为步长滑动
+            对每个窗口位置提取HOG特征
+            使用预训练的SVM分类器判断是否包含目标
+            非极大值抑制：
+            合并重叠的检测窗口
+            使用finalThreshold控制合并的严格程度
+            结果优化：
+            可选使用meanshift方法进一步优化检测框位置
+    */
+    Mat bgr;
+    cvtColor(src, bgr, COLOR_BGRA2BGR);
+    HOGDescriptor descriptor;
+    descriptor.setSVMDetector(descriptor.getDefaultPeopleDetector());
+    vector<Rect> foundLocations;
+    descriptor.detectMultiScale(bgr, foundLocations, 0, Size(14, 14));
+    for (int i = 0; i < foundLocations.size(); ++i) {
+        rectangle(src, foundLocations[i], Scalar(255, 0, 0), 2, LINE_AA);
+    }
+    jobject newBitmap = createBitmap(env, src.rows, src.cols, src.type());
+    mat2bitmap(env, src, newBitmap);
+
+    return newBitmap;
 
 }
-jobject MatFun::lbp(JNIEnv *env, jobject &bitmap){
-    Mat src;
-    bitmap2mat(env, src,bitmap);
-    mat2bitmap(env, src, bitmap);
 
-    return bitmap;
+jobject MatFun::lbp(JNIEnv *env, jobject &bitmap) {
+    //3*3 矩阵
+    Mat src;
+    bitmap2mat(env, src, bitmap);
+    Mat gray;
+    cvtColor(src, gray, COLOR_BGR2GRAY);
+    LOGE("lbp gray cols:%d rows:%d", gray.cols, gray.rows);
+
+
+    // 方式1：3*3 lbp 计算的特征数据
+    /* Mat result = Mat::zeros(Size(gray.cols - 2, gray.rows - 2), CV_8UC1);
+     //计算lbp ,强化轮廓
+     for (int row = 1; row < gray.rows - 1; ++row) {
+         for (int col = 1; col < gray.cols - 1; ++col) {
+             uchar pixels =  gray.at<uchar>(row, col);
+             int rPixels = 0;
+             rPixels |= (pixels >= gray.at<uchar>(row - 1, col - 1)) << 0;
+             rPixels |= (pixels >= gray.at<uchar>(row - 1, col)) << 1;
+             rPixels |= (pixels >= gray.at<uchar>(row - 1, col + 1)) << 2;
+             rPixels |= (pixels >= gray.at<uchar>(row, col - 1)) << 7;
+             rPixels |= (pixels >= gray.at<uchar>(row, col + 1)) << 3;
+             rPixels |= (pixels >= gray.at<uchar>(row + 1, col - 1)) << 6;
+             rPixels |= (pixels >= gray.at<uchar>(row + 1, col)) << 5;
+             rPixels |= (pixels >= gray.at<uchar>(row + 1, col + 1)) << 4;
+             result.at<uchar>(row - 1, col - 1) = rPixels;
+         }
+     }*/
+    //方式2：
+
+    /* Mat expansion;
+     copyMakeBorder(gray, expansion, 1, 1 ,1, 1,
+                    BorderTypes::BORDER_CONSTANT, Scalar().all(0));
+     LOGE("lbp expansion cols:%d rows:%d", expansion.cols, expansion.rows);
+     Mat result = Mat::zeros(Size(gray.cols, gray.rows), CV_8UC1);
+     for (int row = 1; row < expansion.rows-1 ; ++row) {
+         for (int col = 1; col < expansion.cols-1; ++col) {
+             uchar pixels =  expansion.at<uchar>(row, col);
+             int rPixels = 0;
+             rPixels |= (pixels >= expansion.at<uchar>(row - 1, col - 1)) << 0;
+             rPixels |= (pixels >= expansion.at<uchar>(row - 1, col)) << 1;
+             rPixels |= (pixels >= expansion.at<uchar>(row - 1, col + 1)) << 2;
+             rPixels |= (pixels >= expansion.at<uchar>(row, col - 1)) << 7;
+             rPixels |= (pixels >= expansion.at<uchar>(row, col + 1)) << 3;
+             rPixels |= (pixels >= expansion.at<uchar>(row + 1, col - 1)) << 6;
+             rPixels |= (pixels >= expansion.at<uchar>(row + 1, col)) << 5;
+             rPixels |= (pixels >= expansion.at<uchar>(row + 1, col + 1)) << 4;
+             result.at<uchar>(row-1, col-1) = rPixels;
+         }
+     }*/
+
+    //方式3：使用指针效果高
+    Mat expansion;
+    copyMakeBorder(gray, expansion, 1, 1, 1, 1,
+                   BorderTypes::BORDER_CONSTANT, Scalar().all(0));
+    LOGE("lbp expansion cols:%d rows:%d", expansion.cols, expansion.rows);
+    Mat result = Mat::zeros(Size(gray.cols, gray.rows), CV_8UC1);
+    for (int row = 1; row < expansion.rows - 1; ++row) {
+
+        uchar *pixelsPre = expansion.ptr(row - 1);
+        uchar *pixelsCur = expansion.ptr(row);
+        uchar *pixelsLast = expansion.ptr(row + 1);
+        //输出
+        uchar *piexlsOut = result.ptr(row - 1);
+        for (int col = 1; col < expansion.cols - 1; col += expansion.channels()) {
+            int rPixels = 0;
+            uchar pixels = pixelsCur[col];
+            rPixels |= (pixels >= pixelsPre[col - 1]) << 0;
+            rPixels |= (pixels >= pixelsPre[col]) << 1;
+            rPixels |= (pixels >= pixelsPre[col + 1]) << 2;
+
+            rPixels |= (pixels >= pixelsCur[col - 1]) << 7;
+            rPixels |= (pixels >= pixelsCur[col + 1]) << 3;
+
+            rPixels |= (pixels >= pixelsLast[col - 1]) << 6;
+            rPixels |= (pixels >= pixelsLast[col]) << 5;
+            rPixels |= (pixels >= pixelsLast[col + 1]) << 4;
+            piexlsOut[col - 1] = rPixels;
+        }
+
+    }
+    jobject newBitmap = createBitmap(env, result.rows, result.cols, src.type());
+    mat2bitmap(env, result, newBitmap);
+
+    return newBitmap;
 }
-jobject MatFun::haar(JNIEnv *env, jobject &bitmap){
-    Mat src;
-    bitmap2mat(env, src,bitmap);
-    mat2bitmap(env, src, bitmap);
 
+jobject MatFun::haar(JNIEnv *env, jobject &bitmap) {
+    Mat src;
+    bitmap2mat(env, src, bitmap);
+
+    // 拿 hog 的特征
+    // 1. 分成 8* 8 的网格 ceil 求取直方图
+    // 2. 对 ceil 的 4*4 的块去合并直方图，每次必须要有 1/2 的重叠区域
+    // 3. 然后获取直方图的数据
+
+    /*
+     CV_WRAP HOGDescriptor() : winSize(64,128), blockSize(16,16), blockStride(8,8),
+        cellSize(8,8), nbins(9), derivAperture(1), winSigma(-1),
+        histogramNormType(HOGDescriptor::L2Hys), L2HysThreshold(0.2), gammaCorrection(true),
+        free_coef(-1.f), nlevels(HOGDescriptor::DEFAULT_NLEVELS), signedGradient(false)
+    {}
+
+
+    Mat dst, dst_gary;
+    resize(src, dst, Size(64, 128));
+    cvtColor(dst, dst_gary, COLOR_BGRA2GRAY);
+
+    HOGDescriptor hogDescriptor;
+    vector<float> descriptors;
+    vector<Point> locations;
+
+     CV_WRAP virtual void compute(InputArray img,
+                 CV_OUT std::vector<float>& descriptors,
+                 Size winStride = Size(), Size padding = Size(),
+                 const std::vector<Point>& locations = std::vector<Point>()) const;
+
+    hogDescriptor.compute(dst_gary,descriptors,Size(),Size(),locations);
+
+    __android_log_print(ANDROID_LOG_ERROR,"TAG","descriptors size : %d", descriptors.size());
+    */
+
+    /*
+    CV_WRAP virtual void detectMultiScale(InputArray img, CV_OUT std::vector<Rect>& foundLocations,
+                                          CV_OUT std::vector<double>& foundWeights, double hitThreshold = 0,
+                                          Size winStride = Size(), Size padding = Size(), double scale = 1.05,
+                                          double finalThreshold = 2.0,bool useMeanshiftGrouping = false) const;
+                                          */
+    // 训练样本，直接拿过来用
+    Mat bgr;
+    cvtColor(src, bgr, COLOR_BGRA2BGR);
+    HOGDescriptor descriptor;
+    descriptor.setSVMDetector(descriptor.getDefaultPeopleDetector());
+    vector<Rect> foundLocations;
+    descriptor.detectMultiScale(bgr, foundLocations, 0, Size(14, 14));
+    for (int i = 0; i < foundLocations.size(); ++i) {
+        rectangle(src, foundLocations[i], Scalar(255, 0, 0), 2, LINE_AA);
+    }
     return bitmap;
 }

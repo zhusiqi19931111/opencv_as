@@ -28,8 +28,8 @@ public:
      Mat warpTransfrom(const Mat &gary, RotatedRect &rect);
      bool isYCorner(const Mat &qrROI);
      bool isXCorner(const Mat &qrROI);
-     int getX(const vector<Rect> &rects,float angle=0.0f);
-     int getY(const vector<Rect> &rects,float angle=0.0f);
+     int getX(const vector<Rect> &rects,float angle=90.0f);
+     int getY(const vector<Rect> &rects,float angle=90.0f);
      int getWidth(const vector<Rect> &rects,float angle=90.0f);
      int getHeight(const vector<Rect> &rects,float angle=90.0f);
      bool isRegionTiltedByHough(const Mat& gray, const Rect& rect);

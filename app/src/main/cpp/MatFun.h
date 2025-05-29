@@ -99,7 +99,7 @@ public:
     friend void *getMouseCallbackUserData();
 
 
-    void hog(JNIEnv *env, jobject &bitmap);
+    jobject hog(JNIEnv *env, jobject &bitmap);
     jobject lbp(JNIEnv *env, jobject &bitmap);
     jobject haar(JNIEnv *env, jobject &bitmap);
 

@@ -111,14 +111,14 @@ class PrincipleFragment : Fragment(), View.OnClickListener {
 
     private fun haar() {
         val bitmap =
-            BitmapFactory.decodeResource(resources,R.drawable.me)
-
+            BitmapFactory.decodeResource(resources,R.mipmap.lena)
+        binding.img1.setImageBitmap(bitmap)
         FaceDetection.instance.haar(bitmap, object : CallbackInMainThread {
 
             override fun resultCallback(result: Any) {
                 val newBitmap = result as Bitmap
-                binding.img4.setImageBitmap(newBitmap)
-                binding.tvLab4.text = "haar";
+                binding.img1.setImageBitmap(newBitmap)
+                binding.tvLab1.text = "haar";
             }
 
         })
@@ -126,14 +126,14 @@ class PrincipleFragment : Fragment(), View.OnClickListener {
 
     private fun lbp() {
         val bitmap =
-            BitmapFactory.decodeResource(resources,R.drawable.me)
-
+            BitmapFactory.decodeResource(resources,R.mipmap.lena)
+        binding.img1.setImageBitmap(bitmap)
         FaceDetection.instance.lbp(bitmap, object : CallbackInMainThread {
 
             override fun resultCallback(result: Any) {
                 val newBitmap = result as Bitmap
-                binding.img4.setImageBitmap(newBitmap)
-                binding.tvLab4.text = "lbp";
+                binding.img1.setImageBitmap(newBitmap)
+                binding.tvLab1.text = "lbp";
             }
 
         })
@@ -141,13 +141,15 @@ class PrincipleFragment : Fragment(), View.OnClickListener {
 
     private fun hog() {
         val bitmap =
-            BitmapFactory.decodeResource(resources,R.drawable.peoples)
-        FaceDetection.instance.hog(bitmap, object : Runnable {
-            override fun run() {
-                binding.img2.setImageBitmap(bitmap)
-                binding.tvLab2.text = "hog"
-            }
+            BitmapFactory.decodeResource(resources,R.mipmap.peoples)
+        binding.img1.setImageBitmap(bitmap)
+        FaceDetection.instance.hog(bitmap, object : CallbackInMainThread {
 
+            override fun resultCallback(result: Any) {
+                val newBitmap = result as Bitmap
+                binding.img1.setImageBitmap(newBitmap)
+                binding.tvLab1.text = "hog";
+            }
 
         })
     }
