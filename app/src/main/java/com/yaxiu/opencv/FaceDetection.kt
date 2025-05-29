@@ -65,4 +65,10 @@ class FaceDetection {
     external fun equalizeHist(bitmap: Bitmap, runnable: Runnable)
     external fun calcuHist(bitmap: Bitmap, runnable: CallbackInMainThread)
     external fun matLight(bitmap: Bitmap, runnable: Runnable)
+    external fun codeVerification(bitmap: Bitmap,callbackInMainThread: CallbackInMainThread)
+    external fun codeTiltVerification(bitmap: Bitmap, callbackInMainThread: CallbackInMainThread)
+    external fun codeRoundVerification(bitmap: Bitmap?, callbackInMainThread: CallbackInMainThread)
+    external fun lbp(bitmap: Bitmap, callbackInMainThread: CallbackInMainThread)
+    external fun hog(bitmap: Bitmap, runnable: Runnable)
+    external fun haar(bitmap: Bitmap, callbackInMainThread: CallbackInMainThread)
 }

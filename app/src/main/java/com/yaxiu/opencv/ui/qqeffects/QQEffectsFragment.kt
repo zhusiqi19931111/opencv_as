@@ -57,7 +57,9 @@ class QQEffectsFragment : Fragment(), View.OnClickListener {
         binding.btn8.setOnClickListener(this)
         binding.btn9.setOnClickListener(this)
         binding.btn10.setOnClickListener(this)
-
+        binding.btn11.setOnClickListener(this)
+        binding.btn12.setOnClickListener(this)
+        binding.btn13.setOnClickListener(this)
         return root
     }
 
@@ -103,8 +105,89 @@ class QQEffectsFragment : Fragment(), View.OnClickListener {
             R.id.btn10 -> {
                 clipSpecialEffects()
             }
-
+            R.id.btn11->{
+                codeSquareVerification()
+            }
+            R.id.btn12->{
+                codeTiltVerification()
+            }
+            R.id.btn13->{
+                codeRoundVerification()
+            }
         }
+    }
+
+    private fun codeRoundVerification() {
+        val file =
+            File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/code3.jpg")
+        if (!file.exists()) {
+            Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val bitmap =
+            BitmapFactory.decodeFile(file.absolutePath)
+        binding.img1.setImageBitmap(bitmap)
+        binding.tvLab1.text = "圆形二维码";
+        println("clipSpecialEffects pre bitmap width=${bitmap.width} height=${bitmap.height}")
+        FaceDetection.instance.codeRoundVerification(bitmap, object : CallbackInMainThread {
+            override fun resultCallback(result: Any) {
+                val newBitmap = result as Bitmap
+                println("codeVerification last bitmap width=${newBitmap.width} height=${newBitmap.height}")
+                binding.img1.setImageBitmap(newBitmap)
+                binding.tvLab1.text = "圆形二维码验证裁剪"
+            }
+
+
+        })
+    }
+
+    private fun codeTiltVerification() {
+        val file =
+            File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/code.png")
+        if (!file.exists()) {
+            Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val bitmap =
+            BitmapFactory.decodeFile(file.absolutePath)
+        binding.img1.setImageBitmap(bitmap)
+        binding.tvLab1.text = "倾斜二维码";
+        println("clipSpecialEffects pre bitmap width=${bitmap.width} height=${bitmap.height}")
+        FaceDetection.instance.codeTiltVerification(bitmap, object : CallbackInMainThread {
+            override fun resultCallback(result: Any) {
+                val newBitmap = result as Bitmap
+                println("codeVerification last bitmap width=${newBitmap.width} height=${newBitmap.height}")
+                binding.img1.setImageBitmap(newBitmap)
+                binding.tvLab1.text = "倾斜二维码验证裁剪"
+            }
+
+
+        })
+    }
+
+    private fun codeSquareVerification() {
+
+        val file =
+            File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/code1.jpg")
+        if (!file.exists()) {
+            Toast.makeText(requireContext(), "图片资源丢失哦", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val bitmap =
+            BitmapFactory.decodeFile(file.absolutePath)
+        binding.img1.setImageBitmap(bitmap)
+        binding.tvLab1.text = "方形二维码";
+        println("clipSpecialEffects pre bitmap width=${bitmap.width} height=${bitmap.height}")
+        FaceDetection.instance.codeVerification(bitmap, object : CallbackInMainThread {
+            override fun resultCallback(result: Any) {
+                val newBitmap = result as Bitmap
+                println("codeVerification last bitmap width=${newBitmap.width} height=${newBitmap.height}")
+                binding.img1.setImageBitmap(newBitmap)
+                binding.tvLab1.text = "方形二维码验证裁剪"
+            }
+
+
+        })
     }
 
     private fun clipSpecialEffects() {

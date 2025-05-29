@@ -996,3 +996,156 @@ Java_com_yaxiu_opencv_FaceDetection_matLight(JNIEnv *env, jobject thiz, jobject 
         env->DeleteLocalRef(no_such_clz);
     }
 }
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_codeVerification(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                     jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.codeVerification(env, bitmap);
+            LOGD("codeVerification success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_codeTiltVerification(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                         jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.codeTiltVerification(env, bitmap);
+            LOGD("codeVerification success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_codeRoundVerification(JNIEnv *env, jobject thiz, jobject bitmap,
+                                                          jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.codeRoundVerification(env, bitmap);
+            LOGD("codeVerification success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_lbp(JNIEnv *env, jobject thiz, jobject bitmap,
+                                        jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.lbp(env, bitmap);
+            LOGD("lbp success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_hog(JNIEnv *env, jobject thiz, jobject bitmap,
+                                        jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            matfun.hog(env, bitmap);
+            LOGD("hog success");
+            executeJavaOnMainWithRelease(env,self,callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_yaxiu_opencv_FaceDetection_haar(JNIEnv *env, jobject thiz, jobject bitmap,
+                                         jobject callback) {
+    JniThreadFun *safeCallback = new JniThreadFun(g_vm, env, bitmap, callback);
+    thread thread([](JniThreadFun *fun) {
+        fun->run_task([](JNIEnv *env, JniThreadFun* self, jobject &bitmap, jobject callback) -> void {
+            MatFun matfun = MatFun();
+            jobject newBitmap = matfun.haar(env, bitmap);
+            LOGD("haar success");
+            executeJavaOnMainWithReleaseAndResult(env, self,newBitmap, callback);
+
+        });
+
+    }, safeCallback);
+
+    thread.detach();
+    jthrowable thorwable = env->ExceptionOccurred(); //jni 捕获异常
+    if (thorwable) {
+        env->ExceptionClear();//jni 清理异常
+        jclass no_such_clz = env->FindClass("java/lang/Exception");
+        env->ThrowNew(no_such_clz, "Exception occurred");
+        env->DeleteLocalRef(no_such_clz);
+    }
+}

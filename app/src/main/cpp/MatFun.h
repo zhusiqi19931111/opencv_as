@@ -30,6 +30,8 @@ public:
 
     ~MatFun();
 
+
+
 public:
     jobject createBitmap(JNIEnv *env, jint width, jint height, int type);
 
@@ -77,7 +79,7 @@ public:
                                  int radius, float magnification,
                                  bool lensEffect, bool fishEye);
 
-    friend void *getMouseCallbackUserData();
+
 
     jobject rotateImage(JNIEnv *env, jobject &bitmap);
 
@@ -89,6 +91,18 @@ public:
     void equalizeHist(JNIEnv *env, jobject &bitmap);
     jobject calcuHist(JNIEnv *env, jobject &bitmap);
     void matLight(JNIEnv *env, jobject &bitmap);
+
+    jobject codeVerification(JNIEnv *env, jobject &bitmap);
+    jobject codeTiltVerification(JNIEnv *env, jobject &bitmap);
+    jobject codeRoundVerification(JNIEnv *env, jobject &bitmap);
+    //getMouseCallbackUserData 暂时用不到
+    friend void *getMouseCallbackUserData();
+
+
+    void hog(JNIEnv *env, jobject &bitmap);
+    jobject lbp(JNIEnv *env, jobject &bitmap);
+    jobject haar(JNIEnv *env, jobject &bitmap);
+
 };
 
 

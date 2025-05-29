@@ -22,7 +22,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="10dp"
-                app:constraint_referenced_ids="btn1,btn2,btn3,btn4,btn5,btn6,btn7,btn8,btn9,btn10"
+                app:constraint_referenced_ids="btn1,btn2,btn3,btn4,btn5,btn6,btn7,btn8,btn9,btn10,btn11,btn12,,btn13"
                 app:flow_horizontalGap="8dp"
                 app:flow_horizontalStyle="spread_inside"
                 app:flow_verticalGap="8dp"
@@ -118,6 +118,31 @@
                 android:layout_height="wrap_content"
                 android:padding="10dp"
                 android:text="裁剪特效"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn11"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="方形二维码识别和裁剪"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/btn12"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="倾斜二维码识别和裁剪"
+                android:textAlignment="center"
+                android:textSize="20sp" />
+            <Button
+                android:id="@+id/btn13"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="圆形二维码识别和裁剪"
                 android:textAlignment="center"
                 android:textSize="20sp" />
 

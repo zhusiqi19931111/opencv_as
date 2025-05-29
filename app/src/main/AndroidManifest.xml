@@ -19,7 +19,6 @@
         <activity
             android:name=".NavActivity"
             android:exported="true"
-            android:label="@string/title_activity_nav"
             android:theme="@style/Theme.Opencv.NoActionBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

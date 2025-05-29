@@ -385,7 +385,8 @@ int MatFun::mat2bitmap(JNIEnv *env, Mat &mat, jobject &bitmap) {
     }
     // 检查 Bitmap 格式
     CV_Assert(bitmap_info.format == ANDROID_BITMAP_FORMAT_RGBA_8888 ||
-              bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565);
+              bitmap_info.format == ANDROID_BITMAP_FORMAT_RGB_565||
+                      bitmap_info.format == ANDROID_BITMAP_FORMAT_A_8);
     int lockPixelsRes = AndroidBitmap_lockPixels(env, bitmap, &pixelPtr);
     if (lockPixelsRes < 0) {
         return lockPixelsRes;
@@ -1598,4 +1599,313 @@ void MatFun::matLight(JNIEnv *env, jobject &bitmap) {
     cv::merge(hsvMats, hsv);
     cvtColor(hsv, mat, COLOR_HSV2BGR);//hsv 图必须转成原图BGR ,否则显示异常
     mat2bitmap(env, mat, bitmap);
+}
+
+
+/**
+ * @param env
+ * @param bitmap
+ * @return
+ */
+jobject MatFun::codeVerification(JNIEnv *env, jobject &bitmap){
+    Mat src;
+    bitmap2mat(env, src, bitmap);
+    //1.图片转灰度化
+    cvtColor(src,src,COLOR_BGR2GRAY);
+    //2.图片二值化，自动阈值
+    threshold(src,src,0,255,ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
+    //3.查找轮廓
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    findContours(src,contours,hierarchy,RetrievalModes::RETR_LIST ,ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+    vector<Rect> codeMats;
+
+    ImageProc imageProc=  ImageProc();
+
+    for (int i = 0; i <contours.size(); ++i) {
+        //4.轮廓的筛选，传统二维码轮廓的大小>49 ,宽高比>0.8
+        // 过滤面积，
+        vector<Point> points= contours[i];
+        double area = contourArea(points);
+
+        if (area < 49){
+            continue;
+        }
+        RotatedRect rotateRect= minAreaRect(points);
+        //高度
+        float height= rotateRect.size.height;
+        //宽度
+        float width= rotateRect.size.width;
+
+        float radio =min(height,width)/max(height,width);
+
+        if(radio>0.8&& width< src.cols/2 && height< src.rows/2){
+           // 去分析，找到满足宽高比的，满足宽高大小的
+            Mat qrROI = imageProc.warpTransfrom(src, rotateRect);
+            LOGE("codeVerification qrROI  width=%d height=%d ",qrROI.cols,qrROI.rows);
+            //5.对比二维码特征黑白比例7:3:1
+            if (imageProc.isYCorner(qrROI) && imageProc.isXCorner(qrROI)) {
+                drawContours(src, contours, i, Scalar(0, 0, 255), 4);
+                Rect bounding=boundingRect(points);
+                codeMats.push_back(bounding);
+
+            }
+           // char* name;
+           // sprintf(name,"rectangle_%d.jpg",i);
+          //  LOGE("codeVerification name=%s", name);
+
+        }
+    }
+
+    LOGE("codeVerification final  codeMats size=%d ",codeMats.size());
+     if(codeMats.size()>=3){
+         Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats), imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
+         // 校正 Rect，确保不会越界
+         roi_rect.x = max(0, roi_rect.x);
+         roi_rect.y = max(0, roi_rect.y);
+         roi_rect.width = min(roi_rect.width, src.cols - roi_rect.x);
+         roi_rect.height =min(roi_rect.height, src.rows - roi_rect.y);
+
+        // 再进行裁剪
+         Mat mergeCode=src(roi_rect);
+         cvtColor(mergeCode,mergeCode,COLOR_GRAY2BGR);
+         //6.二维码剪切
+         jobject newBitmap=createBitmap(env,mergeCode.cols,mergeCode.rows,mergeCode.type());
+         mat2bitmap(env, mergeCode, newBitmap);
+         LOGE("codeVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x,roi_rect.y,roi_rect.width,roi_rect.height);
+         //7.二维码显示
+         return newBitmap;
+     }
+    mat2bitmap(env, src, bitmap);
+    return bitmap;
+}
+
+
+jobject MatFun::codeTiltVerification(JNIEnv *env, jobject &bitmap){
+    Mat src;
+    bitmap2mat(env, src, bitmap);
+
+    ImageProc imageProc =  ImageProc();
+
+    //1.图片转灰度化
+    cvtColor(src,src,COLOR_BGR2GRAY);
+    cv::equalizeHist(src, src);
+    // 降噪
+    GaussianBlur(src, src, Size(3, 3), 0);
+    //2.图片二值化，自动阈值
+    threshold(src,src,0,255,ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
+    Mat dst(src);
+    float angle=90.0f;
+    bool isCorrection=false;
+    LOGE("codeTiltVerification src  type=%d channels=%d cols=%d rows=%d dst type=%d channels=%d cols=%d rows=%d ",src.type(),src.channels(),src.cols,src.rows,dst.type(),dst.channels(),dst.cols,dst.rows);
+    //3.查找二维码轮廓
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+
+    findContours(dst,contours,hierarchy,RetrievalModes::RETR_LIST ,ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+    vector<Rect> codeMats;
+
+    for (int i = 0; i <contours.size(); ++i) {
+        //4.轮廓的筛选，传统二维码轮廓的大小>49 ,宽高比>0.8
+        // 过滤面积，
+        vector<Point> points= contours[i];
+        double area = contourArea(points);
+
+        if (area < 49){
+            continue;
+        }
+        RotatedRect rotateRect= minAreaRect(points);
+        //高度
+        float height= rotateRect.size.height;
+        //宽度
+        float width= rotateRect.size.width;
+
+        float radio =min(height,width)/max(height,width);
+
+        if(radio>0.8&& width< dst.cols/2 && height< dst.rows/2){
+            // 去分析，找到满足宽高比的，满足宽高大小的
+            Mat qrROI = imageProc.warpTransfrom(dst, rotateRect);
+            LOGE("codeTiltVerification qrROI  width=%d height=%d ",qrROI.cols,qrROI.rows);
+            //5.对比二维码特征黑白比例7:3:1
+            if (imageProc.isYCorner(qrROI) && imageProc.isXCorner(qrROI)) {
+                angle=rotateRect.angle;
+                if(angle!=90.0f&&!isCorrection){
+                    isCorrection=true;
+                    i = 0;
+                    imageProc.correctionMat(dst,dst,angle);
+                    contours.clear();
+                    findContours(dst,contours,hierarchy,RetrievalModes::RETR_LIST ,ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+                    LOGE("codeTiltVerification reset continue angle=%f",angle);
+                    continue;
+                }
+                drawContours(dst, contours, i, Scalar(0, 0, 255), 4);
+                Rect bounding=boundingRect(points);
+                codeMats.push_back(bounding);
+                LOGE("codeTiltVerification push_back i=%d bounding x=%d y=%d width=%d height=%d ",i,bounding.x,bounding.y,bounding.width,bounding.height);
+
+            }
+            // char* name;
+            // sprintf(name,"rectangle_%d.jpg",i);
+            //  LOGE("codeVerification name=%s", name);
+
+        }
+    }
+
+    LOGE("codeTiltVerification final  codeMats size=%d angle=%f",codeMats.size(),angle);
+    if(codeMats.size()>=3){
+        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats), imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
+        // 校正 Rect，确保不会越界
+        roi_rect.x = max(0, roi_rect.x);
+        roi_rect.y = max(0, roi_rect.y);
+        roi_rect.width = min(roi_rect.width, dst.cols - roi_rect.x);
+        roi_rect.height = min(roi_rect.height, dst.rows - roi_rect.y);
+
+        // 再进行裁剪
+        Mat mergeCode=dst(roi_rect);
+        cvtColor(mergeCode,mergeCode,COLOR_GRAY2BGR);
+        //6.二维码剪切
+        jobject newBitmap=createBitmap(env,mergeCode.cols,mergeCode.rows,mergeCode.type());
+        mat2bitmap(env, mergeCode, newBitmap);
+       // imageProc.restoreMat(mergeCode,mergeCode,angle);
+        LOGE("codeTiltVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x,roi_rect.y,roi_rect.width,roi_rect.height);
+        //7.二维码显示
+        return newBitmap;
+    }
+
+    mat2bitmap(env, src, bitmap);
+    return bitmap;
+}
+/**
+ * 三种解决方案：
+    1. 再写一套识别圆形特征的代码
+    2. 借鉴人脸识别的方案，采用训练样本的方式识别
+    3. 换一种检查方案，只写一套代码
+ * @param env
+ * @param bitmap
+ * @return
+ *  1. 对其进行轮廓查找
+    2. 对查找的到的轮廓进行初步过滤
+    3. 判断是否是一个大轮廓套两个小轮廓且符合特征规则(面积比例判断)
+    4. 截取二维码区域
+    5. 识别二维码
+ */
+jobject MatFun::codeRoundVerification(JNIEnv *env, jobject &bitmap){
+    ImageProc imageProc=  ImageProc();
+
+    Mat src;
+    bitmap2mat(env, src,bitmap);
+    vector<Rect> codeMats;
+    // 对图像进行灰度转换
+    Mat gray;
+    cvtColor(src, gray, COLOR_BGR2GRAY);
+   //方式一 二值化
+    threshold(gray, gray, 0, 255, THRESH_BINARY | THRESH_OTSU);
+
+   /**
+     * 方式二
+     * todo 特别注意二维码图像是彩色的，背景和前景对比不强，并且颜色变化细腻，直接灰度 + Otsu 会导致重要的颜色细节丢失，二维码圆点被清除或连接不清晰。使用 adaptiveThreshold + 色彩通道分离（保留色彩特征）
+     * todo我们可以将图像转换为 HSV 或 LAB 色彩空间，并选择其中的亮度/色度通道进行自适应二值化。
+     *  Mat hsv, vChannel;
+        cvtColor(src, hsv, COLOR_BGR2HSV);
+        vector<Mat> hsv_channels;
+        split(hsv, hsv_channels); // HSV 通道分离
+        vChannel = hsv_channels[2]; // 亮度通道
+        // 使用自适应阈值，适应局部颜色变化
+        adaptiveThreshold(vChannel, vChannel, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 31, 5);
+        // 可选：形态学操作增强圆形结构（闭运算填补间隙）
+        Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
+        morphologyEx(vChannel, gray, MORPH_CLOSE, kernel);
+   */
+
+    // 1. 对其进行轮廓查找
+    vector<Vec4i> hierarchy;
+    vector<vector<Point> > contours;
+    vector<vector<Point> > contoursRes;
+    /**
+     参数说明：https://blog.csdn.net/guduruyu/article/details/69220296
+        输入图像image必须为一个2值单通道图像
+        contours参数为检测的轮廓数组，每一个轮廓用一个point类型的vector表示
+        hiararchy参数和轮廓个数相同，每个轮廓contours[ i ]对应4个hierarchy元素hierarchy[ i ][ 0 ] ~hierarchy[ i ][ 3 ]，
+            分别表示后一个轮廓、前一个轮廓、父轮廓、内嵌轮廓的索引编号，如果没有对应项，该值设置为负数。
+        mode表示轮廓的检索模式
+            CV_RETR_EXTERNAL 表示只检测外轮廓
+            CV_RETR_LIST 检测的轮廓不建立等级关系
+            CV_RETR_CCOMP 建立两个等级的轮廓，上面的一层为外边界，里面的一层为内孔的边界信息。如果内孔内还有一个连通物体，这个物体的边界也在顶层。
+            CV_RETR_TREE 建立一个等级树结构的轮廓。具体参考contours.c这个demo
+        method为轮廓的近似办法
+            CV_CHAIN_APPROX_NONE 存储所有的轮廓点，相邻的两个点的像素位置差不超过1，即max（abs（x1-x2），abs（y2-y1））==1
+            CV_CHAIN_APPROX_SIMPLE 压缩水平方向，垂直方向，对角线方向的元素，只保留该方向的终点坐标，例如一个矩形轮廓只需4个点来保存轮廓信息
+            CV_CHAIN_APPROX_TC89_L1，CV_CHAIN_APPROX_TC89_KCOS 使用teh-Chinl chain 近似算法
+        offset表示代表轮廓点的偏移量，可以设置为任意值。对ROI图像中找出的轮廓，并要在整个图像中进行分析时，这个参数还是很有用的。
+     */
+    findContours(gray, contours, hierarchy, RetrievalModes::RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0));
+    int tCC = 0; // 临时用来累加的子轮廓计数器
+    int pId = -1;// 父轮廓的 index
+    for (int i = 0; i < contours.size(); i++) {
+        if (hierarchy[i][2] != -1 && tCC == 0) {
+            pId = i;
+            tCC++;
+        } else if (hierarchy[i][2] != -1) {// 有父轮廓
+            tCC++;
+        } else if (hierarchy[i][2] == -1) {// 没有父轮廓
+            tCC = 0;
+            pId = -1;
+        }
+        // 找到了两个子轮廓
+        if (tCC >= 2) {
+            Rect bounding = boundingRect(contours[i]);
+            codeMats.push_back(bounding);
+            contoursRes.push_back(contours[pId]);
+            tCC = 0;
+            pId = -1;
+        }
+    }
+
+
+    for (int i = 0; i < contoursRes.size(); ++i) {
+        drawContours(src, contoursRes, i, Scalar(255, 0, 0), 2);
+    }
+    LOGE("codeRoundVerification contoursRes.size=%d codeMats.size=%d",contoursRes.size(), codeMats.size());
+    // 裁剪二维码，交给 zxing 或者 zbar 处理即可
+    if(codeMats.size()>=3){
+        Rect roi_rect(imageProc.getX(codeMats), imageProc.getY(codeMats), imageProc.getWidth(codeMats), imageProc.getHeight(codeMats));
+        // 校正 Rect，确保不会越界
+        roi_rect.x = max(0, roi_rect.x);
+        roi_rect.y = max(0, roi_rect.y);
+        roi_rect.width = min(roi_rect.width, src.cols - roi_rect.x);
+        roi_rect.height =min(roi_rect.height, src.rows - roi_rect.y);
+
+        // 再进行裁剪
+        Mat mergeCode=src(roi_rect);
+        cvtColor(mergeCode,mergeCode,COLOR_GRAY2BGR);
+        //6.二维码剪切
+        jobject newBitmap=createBitmap(env,mergeCode.cols,mergeCode.rows,mergeCode.type());
+        mat2bitmap(env, mergeCode, newBitmap);
+        LOGE("codeRoundVerification Rect x=%d y=%d width=%d height=%d ", roi_rect.x,roi_rect.y,roi_rect.width,roi_rect.height);
+        //7.二维码显示
+        return newBitmap;
+    }
+
+
+    mat2bitmap(env, src, bitmap);
+
+    return bitmap;
+}
+
+void MatFun::hog(JNIEnv *env, jobject &bitmap){
+
+}
+jobject MatFun::lbp(JNIEnv *env, jobject &bitmap){
+    Mat src;
+    bitmap2mat(env, src,bitmap);
+    mat2bitmap(env, src, bitmap);
+
+    return bitmap;
+}
+jobject MatFun::haar(JNIEnv *env, jobject &bitmap){
+    Mat src;
+    bitmap2mat(env, src,bitmap);
+    mat2bitmap(env, src, bitmap);
+
+    return bitmap;
 }

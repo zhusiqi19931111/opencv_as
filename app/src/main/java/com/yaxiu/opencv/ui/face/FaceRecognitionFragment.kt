@@ -15,6 +15,8 @@ import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import android.widget.Toast.LENGTH_SHORT
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -35,6 +37,7 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
     private lateinit var faceBitmap: Bitmap
     private val REQUEST_CODE = 200
     private val TAG = "FaceRecognitionFragment"
+    private var isCheckPermission=false
 
     private var _binding: FragmentFaceBinding? = null
 
@@ -200,19 +203,24 @@ class FaceRecognitionFragment : Fragment(), View.OnClickListener {
         // 识别人脸，保存人脸特征信息
         when (v.id) {
             R.id.btn_recognition -> {
-                runSubThread {
-                    FaceDetection.instance.faceDetectionSaveInfo(faceBitmap)
-                    Thread.sleep(3_000)//临时用途，建议采用回调
-                    requireActivity().runOnUiThread({
-                        binding.faceImage.setImageBitmap(faceBitmap)
-                    })
+                if(isCheckPermission){
+                    runSubThread {
+                        FaceDetection.instance.faceDetectionSaveInfo(faceBitmap)
+                        Thread.sleep(30_000)//临时用途，建议采用回调
+                        requireActivity().runOnUiThread({
+                            binding.faceImage.setImageBitmap(faceBitmap)
+                        })
 
+                    }
+                }else{
+                  Toast.makeText(requireContext(),"请先检查权限",LENGTH_SHORT ).show()
                 }
+
 
             }
 
             R.id.btn_check_permission -> {
-
+                isCheckPermission = true
                 if (checkStoragePermission()) {
                     requestStoragePermission()
                 } else {

@@ -42,6 +42,9 @@ class PrincipleFragment : Fragment(), View.OnClickListener {
         binding.btn6.setOnClickListener(this)
         binding.btn7.setOnClickListener(this)
         binding.btn8.setOnClickListener(this)
+        binding.btn9.setOnClickListener(this)
+        binding.btn10.setOnClickListener(this)
+        binding.btn11.setOnClickListener(this)
 
         val file =
             File("/storage/emulated/0/Android/data/com.yaxiu.opencv/files/Download/20250512112613.jpg");
@@ -92,7 +95,61 @@ class PrincipleFragment : Fragment(), View.OnClickListener {
                 matLight()
             }
 
+            R.id.btn9 -> {
+                hog()
+            }
+
+            R.id.btn10 -> {
+                lbp()
+            }
+
+            R.id.btn11 -> {
+                haar()
+            }
         }
+    }
+
+    private fun haar() {
+        val bitmap =
+            BitmapFactory.decodeResource(resources,R.drawable.me)
+
+        FaceDetection.instance.haar(bitmap, object : CallbackInMainThread {
+
+            override fun resultCallback(result: Any) {
+                val newBitmap = result as Bitmap
+                binding.img4.setImageBitmap(newBitmap)
+                binding.tvLab4.text = "haar";
+            }
+
+        })
+    }
+
+    private fun lbp() {
+        val bitmap =
+            BitmapFactory.decodeResource(resources,R.drawable.me)
+
+        FaceDetection.instance.lbp(bitmap, object : CallbackInMainThread {
+
+            override fun resultCallback(result: Any) {
+                val newBitmap = result as Bitmap
+                binding.img4.setImageBitmap(newBitmap)
+                binding.tvLab4.text = "lbp";
+            }
+
+        })
+    }
+
+    private fun hog() {
+        val bitmap =
+            BitmapFactory.decodeResource(resources,R.drawable.peoples)
+        FaceDetection.instance.hog(bitmap, object : Runnable {
+            override fun run() {
+                binding.img2.setImageBitmap(bitmap)
+                binding.tvLab2.text = "hog"
+            }
+
+
+        })
     }
 
     private fun matLight() {
